@@ -80,7 +80,7 @@ local Window = Fluent:CreateWindow({
 })
 
 local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "" }),
+    Main = Window:AddTab({ Title = "Full Moon", Icon = "" }),
 }
 
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
@@ -131,7 +131,7 @@ function topos(Pos)
 end
 
 -- Toggle để bật/tắt
-Main:AddToggle("Farm Chest | Safe", false, function(value)
+Tabs.Main:AddToggle("Farm Chest | Safe", false, function(value)
     AutoFarmChest = value
 end)
 

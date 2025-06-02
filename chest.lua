@@ -139,31 +139,23 @@ end)
 _G.MagnitudeAdd = 0
 
 spawn(function()
-    while wait() do 
-        if AutoFarmChest then
-            local player = game.Players.LocalPlayer
-            local char = player.Character
-            if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
-
-            for _, v in pairs(game:GetService("Workspace"):GetChildren()) do 
-                if v.Name:find("Chest") and v:IsA("BasePart") then
-                    local distance = (v.Position - char.HumanoidRootPart.Position).Magnitude
-                    if distance <= 5000 + _G.MagnitudeAdd then
-                        local chestCFrame = v.CFrame
-
-                        repeat wait()
-                            if v and v.Parent then
-                                topos(chestCFrame)
-                            end
-                        until AutoFarmChest == false or not v:IsDescendantOf(game.Workspace)
-
-                        topos(char.HumanoidRootPart.CFrame) -- quay lại chỗ cũ
-
-                        _G.MagnitudeAdd = _G.MagnitudeAdd + 1500
-                        break
-                    end
-                end
-            end
-        end
-    end
+	while wait() do 
+		if AutoFarmChest then
+			for i,v in pairs(game:GetService("Workspace"):GetChildren()) do 
+				if v.Name:find("Chest") and v:IsA("BasePart") then
+					if (v.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 5000 + _G.MagnitudeAdd then
+						repeat wait()
+							if v and v.Parent then
+								topos(v.CFrame)
+							end
+						until AutoFarmChest == false or not v:IsDescendantOf(game.Workspace)
+						
+						topos(game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.CFrame)
+						_G.MagnitudeAdd = _G.MagnitudeAdd + 1500
+						break
+					end
+				end
+			end
+		end
+	end
 end)

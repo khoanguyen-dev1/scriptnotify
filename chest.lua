@@ -14,12 +14,13 @@ local rootPart = character:WaitForChild("HumanoidRootPart")
 -- Configuration
 local config = {
     farmEnabled = true,
-    collectFruits = true,
+    collectFruits = false,
     collectChests = true,
-    collectBoxes = true,
-    teleportSpeed = 50,
-    farmRadius = 1000,
-    autoRespawn = true
+    collectBoxes = false,
+    teleportSpeed = 100,
+    farmRadius = math.huge, -- Farm toàn bộ server
+    autoRespawn = true,
+    chestFarmMode = true -- Chế độ farm chest chuyên dụng
 }
 
 -- Storage for tracked items
@@ -50,122 +51,166 @@ local function teleportTo(position)
     tween.Completed:Wait()
 end
 
-local function findNearestItem(itemType)
-    local nearestItem = nil
-    local shortestDistance = math.huge
+local function findAllChests()
+    local chests = {}
     
+    -- Tìm tất cả chest trong server
     for _, obj in pairs(workspace:GetDescendants()) do
-        local isTargetItem = false
+        local isChest = false
         
-        -- Check for different item types
-        if itemType == "fruit" and (obj.Name:lower():find("fruit") or obj.Name:lower():find("berry")) then
-            isTargetItem = true
-        elseif itemType == "chest" and obj.Name:lower():find("chest") then
-            isTargetItem = true
-        elseif itemType == "box" and obj.Name:lower():find("box") then
-            isTargetItem = true
+        -- Kiểm tra nhiều loại chest khác nhau
+        if obj.Name:lower():find("chest") or 
+           obj.Name:lower():find("treasure") or
+           obj.Name:lower():find("box") or
+           obj.Name:lower():find("crate") or
+           obj.Name == "Chest" then
+            isChest = true
         end
         
-        if isTargetItem and obj:IsA("BasePart") then
-            local distance = (rootPart.Position - obj.Position).Magnitude
-            
-            if distance < config.farmRadius and distance < shortestDistance then
-                shortestDistance = distance
-                nearestItem = obj
-            end
+        if isChest and obj:IsA("BasePart") and obj.Parent then
+            table.insert(chests, obj)
         end
     end
     
-    return nearestItem, shortestDistance
+    -- Sắp xếp theo khoảng cách gần nhất
+    table.sort(chests, function(a, b)
+        local distA = (rootPart.Position - a.Position).Magnitude
+        local distB = (rootPart.Position - b.Position).Magnitude
+        return distA < distB
+    end)
+    
+    return chests
 end
 
 local function collectItem(item)
     if not item or not item.Parent then return false end
     
-    -- Teleport to item
-    teleportTo(item.Position + Vector3.new(0, 5, 0))
-    wait(0.5)
+    print("Đang thu thập: " .. item.Name .. " tại vị trí: " .. tostring(item.Position))
     
-    -- Try different collection methods
+    -- Try different collection methods với nhiều cách hơn
     local success = false
     
-    -- Method 1: Touch detection
+    -- Method 1: Direct touch
     if item.Touched then
-        item:TouchInterest()
-        success = true
+        local connection
+        connection = item.Touched:Connect(function(hit)
+            if hit.Parent == character then
+                connection:Disconnect()
+                success = true
+            end
+        end)
+        
+        -- Force touch
+        firetouchinterest(rootPart, item, 0)
+        wait(0.1)
+        firetouchinterest(rootPart, item, 1)
+        wait(0.5)
+        
+        if connection then connection:Disconnect() end
     end
     
     -- Method 2: Click detector
-    local clickDetector = item:FindFirstChild("ClickDetector")
+    local clickDetector = item:FindFirstChild("ClickDetector") or item:FindFirstChildOfClass("ClickDetector")
     if clickDetector then
         fireclickdetector(clickDetector)
         success = true
+        wait(0.5)
     end
     
     -- Method 3: Proximity prompt
-    local proximityPrompt = item:FindFirstChild("ProximityPrompt")
+    local proximityPrompt = item:FindFirstChild("ProximityPrompt") or item:FindFirstChildOfClass("ProximityPrompt")
     if proximityPrompt then
         fireproximityprompt(proximityPrompt)
         success = true
+        wait(0.5)
     end
     
-    -- Method 4: Remote events (common in fruit games)
-    local remotes = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage:FindFirstChild("Events")
-    if remotes then
-        local collectRemote = remotes:FindFirstChild("CollectFruit") or 
-                             remotes:FindFirstChild("Collect") or
-                             remotes:FindFirstChild("PickupItem")
-        if collectRemote then
-            collectRemote:FireServer(item)
+    -- Method 4: Remote events (nhiều tên remote khác nhau)
+    local function tryFireRemote(remoteName, ...)
+        local remote = ReplicatedStorage:FindFirstChild(remoteName, true)
+        if remote and remote:IsA("RemoteEvent") then
+            remote:FireServer(...)
+            return true
+        end
+        return false
+    end
+    
+    -- Thử nhiều tên remote khác nhau
+    local remoteNames = {
+        "CollectChest", "Collect", "PickupItem", "TakeChest", 
+        "OpenChest", "ClaimChest", "ChestCollect", "GetChest"
+    }
+    
+    for _, remoteName in pairs(remoteNames) do
+        if tryFireRemote(remoteName, item) then
             success = true
+            break
         end
     end
     
-    wait(1)
+    -- Method 5: Thử tìm remote trong các folder khác nhau
+    local remoteFolders = {"Remotes", "Events", "Remote", "RemoteEvents", "Game"}
+    for _, folderName in pairs(remoteFolders) do
+        local folder = ReplicatedStorage:FindFirstChild(folderName)
+        if folder then
+            for _, remoteName in pairs(remoteNames) do
+                local remote = folder:FindFirstChild(remoteName)
+                if remote and remote:IsA("RemoteEvent") then
+                    remote:FireServer(item)
+                    success = true
+                    break
+                end
+            end
+        end
+        if success then break end
+    end
+    
+    print("Thu thập " .. (success and "thành công" or "thất bại") .. ": " .. item.Name)
+    wait(0.5)
     return success
 end
 
-local function farmLoop()
-    while config.farmEnabled do
+local function farmAllChests()
+    while config.farmEnabled and config.chestFarmMode do
         if not isCollecting and rootPart then
             isCollecting = true
             
-            local itemCollected = false
+            print("Đang tìm kiếm tất cả chest trong server...")
+            local allChests = findAllChests()
             
-            -- Collect fruits
-            if config.collectFruits then
-                local fruit, distance = findNearestItem("fruit")
-                if fruit then
-                    print("Collecting fruit:", fruit.Name)
-                    collectItem(fruit)
-                    itemCollected = true
+            print("Tìm thấy " .. #allChests .. " chest trong server")
+            
+            for i, chest in pairs(allChests) do
+                if not config.farmEnabled or not config.chestFarmMode then 
+                    break 
+                end
+                
+                if chest and chest.Parent then
+                    print("Farm chest " .. i .. "/" .. #allChests .. ": " .. chest.Name)
+                    
+                    -- Teleport đến chest
+                    local success = pcall(function()
+                        teleportTo(chest.Position + Vector3.new(0, 10, 0))
+                    end)
+                    
+                    if success then
+                        wait(0.5)
+                        collectItem(chest)
+                        wait(1)
+                    else
+                        print("Không thể teleport đến chest: " .. chest.Name)
+                    end
+                else
+                    print("Chest đã biến mất: " .. tostring(chest))
                 end
             end
             
-            -- Collect chests
-            if config.collectChests and not itemCollected then
-                local chest, distance = findNearestItem("chest")
-                if chest then
-                    print("Collecting chest:", chest.Name)
-                    collectItem(chest)
-                    itemCollected = true
-                end
-            end
-            
-            -- Collect boxes
-            if config.collectBoxes and not itemCollected then
-                local box, distance = findNearestItem("box")
-                if box then
-                    print("Collecting box:", box.Name)
-                    collectItem(box)
-                    itemCollected = true
-                end
-            end
-            
+            print("Hoàn thành farm tất cả chest! Chờ chest mới spawn...")
             isCollecting = false
+            wait(10) -- Chờ chest mới spawn
+        else
+            wait(1)
         end
-        
-        wait(2) -- Wait between collection cycles
     end
 end
 
@@ -228,23 +273,24 @@ local function createGUI()
         end)
     end
     
-    createToggle("Auto Farm", 40, "farmEnabled")
-    createToggle("Collect Fruits", 70, "collectFruits")
-    createToggle("Collect Chests", 100, "collectChests")
-    createToggle("Collect Boxes", 130, "collectBoxes")
+    createToggle("Farm Tất Cả Chest", 40, "chestFarmMode")
+    createToggle("Auto Farm", 70, "farmEnabled")
+    createToggle("Thu Thập Fruits", 100, "collectFruits")
+    createToggle("Thu Thập Boxes", 130, "collectBoxes")
     createToggle("Auto Respawn", 160, "autoRespawn")
 end
 
 -- Initialize
 local function initialize()
-    print("Sea Auto Farm Script Loaded!")
-    print("Features: Fruit Collection, Chest Farming, Box Collection")
+    print("=== SEA CHEST FARM SCRIPT LOADED ===")
+    print("Chế độ: Farm tất cả chest trong server")
+    print("Tính năng: Thu thập toàn bộ chest có thể")
     
     setupAutoRespawn()
     createGUI()
     
-    -- Start farming loop
-    spawn(farmLoop)
+    -- Start chest farming loop
+    spawn(farmAllChests)
 end
 
 -- Start the script

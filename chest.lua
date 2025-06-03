@@ -6,6 +6,30 @@ local CurrentIsland = 1
 local VisitedIslands = {}
 local FinishedCycle = false
 
+local desiredTeam = "Marines"
+game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", desiredTeam)
+
+repeat
+    task.wait(1)
+    local chooseTeam = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ChooseTeam", true)
+    local uiController = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("UIController", true)
+
+    if chooseTeam and chooseTeam.Visible and uiController then
+        for _, v in pairs(getgc(true)) do
+            if type(v) == "function" and getfenv(v).script == uiController then
+                local constant = getconstants(v)
+                pcall(function()
+                    if (constant[1] == "Pirates" or constant[1] == "Marines") and #constant == 1 then
+                        if constant[1] == desiredTeam then
+                            v(desiredTeam)
+                        end
+                    end
+                end)
+            end
+        end
+    end
+until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
+
 -- Tọa độ các đảo trong Sea 2
 local PortalPos = {
     Vector3.new(-5880.94677734375,18.357391357421875,-5061.93359375), -- Cursed Ship

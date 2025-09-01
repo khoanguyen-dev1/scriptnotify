@@ -131,7 +131,8 @@ end)
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local toggleBtn = Instance.new("TextButton", ScreenGui)
 toggleBtn.Size = UDim2.new(0,120,0,40)
-toggleBtn.Position = UDim2.new(0.5,-60,0.5,-20)
+-- Nằm bên trái và giữa màn hình
+toggleBtn.Position = UDim2.new(0, 20, 0.5, -20)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
 toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
 toggleBtn.Text = "Farm: OFF"

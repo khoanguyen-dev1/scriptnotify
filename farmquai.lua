@@ -231,31 +231,4 @@ toggleBtn.MouseButton1Click:Connect(function()
     toggleBtn:TweenSize(UDim2.new(1, -10, 0, 50), "Out", "Quad", 0.1, true)
 end)
 
--- Nút Teleport
-local teleportBtn = Instance.new("TextButton")
-teleportBtn.Size = UDim2.new(1, -10, 0, 50)
-teleportBtn.Position = UDim2.new(0, 5, 0, 60)
-teleportBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 170)
-teleportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-teleportBtn.Text = "📡 Teleport"
-teleportBtn.TextScaled = true
-teleportBtn.Font = Enum.Font.SourceSansBold
-teleportBtn.BorderSizePixel = 0
-teleportBtn.Parent = Frame
-
-local TeleportCorner = Instance.new("UICorner")
-TeleportCorner.CornerRadius = UDim.new(0, 5)
-TeleportCorner.Parent = teleportBtn
-
-teleportBtn.MouseButton1Click:Connect(function()
-    local args = {
-        [1] = "InitiateTeleportToTemple"
-    }
-    game:GetService("ReplicatedStorage")
-        :WaitForChild("Modules")
-        :WaitForChild("Net")
-        :WaitForChild("RF/OniTempleTransportation")
-        :InvokeServer(unpack(args))
-end)
-
 print("🚀 Script loaded successfully!")

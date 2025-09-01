@@ -89,8 +89,33 @@ end)
 local npcName = "Oni Soldier"
 local platform = nil
 
--- Hàm tạo platform
-local function createPlatform()
+-- Hàm di chuyển mượt mà
+local function topos(Pos)
+    local Player = game.Players.LocalPlayer
+    local HRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+    if not HRP then return end
+    
+    local rawPosition = typeof(Pos) == "Vector3" and Pos or (Pos.Position or Pos.p)
+    local targetPosition = rawPosition + Vector3.new(0, 8, 0) -- Player cao hơn quái 8 studs
+    local Distance = (targetPosition - HRP.Position).Magnitude
+    
+    -- Nếu quá gần thì không cần tween
+    if Distance < 5 then
+        HRP.CFrame = CFrame.new(targetPosition)
+        return
+    end
+    
+    local Speed = 300 -- Tốc độ di chuyển
+    local tweenService = game:GetService("TweenService")
+    local tweenInfo = TweenInfo.new(Distance / Speed, Enum.EasingStyle.Linear)
+    local tween = tweenService:Create(HRP, tweenInfo, {CFrame = CFrame.new(targetPosition)})
+    
+    tween:Play()
+    -- Không wait để không block code
+end
+
+-- Hàm tạo platform cho player đứng
+local function createStandPlatform()
     if platform and platform.Parent then
         platform:Destroy()
     end
@@ -98,18 +123,26 @@ local function createPlatform()
     pcall(function()
         local hrp = LocalPlayer.Character.HumanoidRootPart
         platform = Instance.new("Part")
-        platform.Size = Vector3.new(8, 1, 8)
+        platform.Size = Vector3.new(6, 1, 6) -- Đủ rộng để đứng
         platform.Anchored = true
         platform.CanCollide = true
-        platform.Material = Enum.Material.WoodPlanks
-        platform.Transparency = 0.8
-        platform.Name = "FlyingPlatform"
-        platform.CFrame = hrp.CFrame + Vector3.new(0, 15, 0)
+        platform.Material = Enum.Material.Neon
+        platform.BrickColor = BrickColor.new("Bright blue")
+        platform.Transparency = 0.7
+        platform.Name = "StandPlatform"
+        platform.CFrame = hrp.CFrame + Vector3.new(0, -3, 0) -- Dưới chân player
         platform.Parent = workspace
+        
+        -- Thêm ánh sáng cho đẹp
+        local light = Instance.new("PointLight")
+        light.Color = Color3.fromRGB(0, 150, 255)
+        light.Brightness = 1
+        light.Range = 10
+        light.Parent = platform
     end)
 end
 
--- Hàm gom mob
+-- Hàm gom mob về dưới platform
 local function bringMobs()
     if not _G.BringAllMob or not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
     
@@ -137,13 +170,14 @@ local function bringMobs()
                         mob.Humanoid.Animator:Destroy() 
                     end
                     
-                    -- Đưa mob về dưới chân player (thay vì platform)
+                    -- Đưa mob về DƯỚI platform (player ở trên, mob ở dưới)
                     mob.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(
-                        math.random(-2,2), 
-                        -4, -- Dưới chân player
-                        math.random(-2,2)
+                        math.random(-3,3), 
+                        -8, -- Dưới platform, tầm đánh của player
+                        math.random(-3,3)
                     )
                     mob.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
+                    mob.HumanoidRootPart.Anchored = true -- Giữ cố định
                 end
             end
         end
@@ -153,7 +187,7 @@ end
 
 -- Farm loop chính
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(0.2) do -- Tăng delay để tween hoạt động mượt
         if not _G.FarmEnabled then 
             if platform and platform.Parent then
                 platform:Destroy()
@@ -188,29 +222,22 @@ task.spawn(function()
             end
 
             if target then
-                -- Đứng trên đầu quái (chỉ cao hơn 5-7 studs)
-                hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 6, 0)
+                -- Sử dụng topos để di chuyển mượt mà (player sẽ ở cao hơn mob 8 studs)
+                if nearestDistance > 10 then -- Chỉ tween khi cần thiết
+                    topos(target.HumanoidRootPart.Position)
+                end
                 
-                -- Tạo platform nhỏ dưới chân (không cần thiết nhưng để đảm bảo)
+                -- Tạo StandPlatform cho player đứng nếu chưa có
                 if not platform or not platform.Parent then
-                    local smallPlatform = Instance.new("Part")
-                    smallPlatform.Size = Vector3.new(4, 0.5, 4)
-                    smallPlatform.Anchored = true
-                    smallPlatform.CanCollide = true
-                    smallPlatform.Material = Enum.Material.ForceField
-                    smallPlatform.Transparency = 0.9
-                    smallPlatform.Name = "StandPlatform"
-                    smallPlatform.CFrame = hrp.CFrame * CFrame.new(0, -3, 0)
-                    smallPlatform.Parent = workspace
-                    platform = smallPlatform
+                    createStandPlatform()
                 end
                 
-                -- Cập nhật platform dưới chân
+                -- Cập nhật platform theo vị trí player (platform luôn dưới chân player)
                 if platform and platform.Parent then
-                    platform.CFrame = hrp.CFrame * CFrame.new(0, -3, 0)
+                    platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3, hrp.Position.Z)
                 end
                 
-                -- Gom mob lại dưới chân
+                -- Gom tất cả mob về dưới platform (player trên, mob dưới)
                 bringMobs()
             else
                 -- Không có mob thì xóa platform

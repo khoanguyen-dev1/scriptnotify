@@ -8,11 +8,32 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/khoanguyen-dev1/scrip
 
 repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 local LocalPlayer = game.Players.LocalPlayer
-local hrp = LocalPlayer.Character.HumanoidRootPart
+
 -- Chọn team Marines
 local desiredTeam = "Marines"
 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", desiredTeam)
-repeat task.wait(1) until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
+
+repeat
+    task.wait(1)
+    local chooseTeam = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ChooseTeam", true)
+    local uiController = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("UIController", true)
+
+    if chooseTeam and chooseTeam.Visible and uiController then
+        for _, v in pairs(getgc(true)) do
+            if type(v) == "function" and getfenv(v).script == uiController then
+                local constant = getconstants(v)
+                pcall(function()
+                    if (constant[1] == "Pirates" or constant[1] == "Marines") and #constant == 1 then
+                        if constant[1] == desiredTeam then
+                            v(desiredTeam)
+                        end
+                    end
+                end)
+            end
+        end
+    end
+until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
+
 
 -- Hàm bật Haki
 function AutoHaki()
@@ -61,7 +82,7 @@ end)
 
 -- Tên NPC cần farm
 local npcName = "Oni Soldier"
-
+local hrp = LocalPlayer.Character.HumanoidRootPart
 -- Platform bay
 local platform = Instance.new("Part")
 platform.Size = Vector3.new(6,1,6)

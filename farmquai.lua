@@ -77,13 +77,18 @@ end)
 local npcName = "Oni Soldier"
 
 -- Hàm tìm mob gần nhất
-function FindNearestMob()
+local function FindNearestMob()
     local closest, dist = nil, math.huge
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+
     for _, mob in pairs(workspace.Enemies:GetChildren()) do
-        if mob.Name == npcName and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-            local mag = (LocalPlayer.Character.HumanoidRootPart.Position - mob.HumanoidRootPart.Position).magnitude
-            if mag < dist then
-                closest, dist = mob, mag
+        if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+            if mob:FindFirstChild("HumanoidRootPart") and string.find(mob.Name, npcName) then
+                local mag = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+                if mag < dist then
+                    closest, dist = mob, mag
+                end
             end
         end
     end
@@ -103,7 +108,7 @@ task.spawn(function()
 
     while task.wait(0.3) do
         if not _G.FarmEnabled then
-            platform.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
+            platform.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, -4, 0)
             continue
         end
 

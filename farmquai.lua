@@ -127,7 +127,7 @@ task.spawn(function()
         if not hrp then continue end
 
         if not _G.FarmEnabled then
-            -- Khi OFF farm: platform xuống dưới map, player đứng tự nhiên
+            -- Khi OFF farm: platform xuống dưới map, player đứng yên
             platform.CFrame = CFrame.new(0, -500, 0)
             continue
         end
@@ -138,17 +138,24 @@ task.spawn(function()
             -- Tween tới mob
             TweenTo(target.HumanoidRootPart.Position)
 
-            -- Khi đã tới mob, giữ player đứng trên platform
+            -- Khi đã tới mob, giữ platform và player ở trên đầu mob
             while _G.FarmEnabled 
                 and target.Parent 
                 and target:FindFirstChild("Humanoid") 
                 and target.Humanoid.Health > 0 do
 
-                if hrp and platform then
-                    platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3.5, hrp.Position.Z)
+                if target:FindFirstChild("HumanoidRootPart") and platform then
+                    local mobPos = target.HumanoidRootPart.Position
+
+                    -- Platform di chuyển theo mob
+                    platform.CFrame = CFrame.new(mobPos.X, mobPos.Y + 5, mobPos.Z)
+
+                    -- Player luôn đứng trên platform
+                    if hrp then
+                        hrp.CFrame = platform.CFrame * CFrame.new(0, 3, 0)
+                    end
                 end
 
-                -- FastAttack xử lý ở đây
                 task.wait(0.1)
             end
         end

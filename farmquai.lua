@@ -1,3 +1,6 @@
+-- 📌 Tọa độ bạn muốn bay đến sau khi farm xong toàn bộ mob
+local RestPosition = Vector3.new(-5501.65625, -4166.60205078125, 4013.425048828125)
+
 _G.SelectWeapon = "Melee"
 _G.FarmEnabled = false -- On/Off farm
 
@@ -73,18 +76,17 @@ task.spawn(function()
     end
 end)
 
--- Hàm Tween di chuyển
+-- Tween function
 local TweenService = game:GetService("TweenService")
-local function TweenTo(Pos)
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    local targetPos = typeof(Pos) == "Vector3" and Pos or Pos.Position
-    targetPos = targetPos + Vector3.new(0, 20, 0) -- đứng trên mob
-    
-    local distance = (targetPos - hrp.Position).Magnitude
-    local speed = 300
-    local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
+local function topos(Pos)
+    local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not HRP then return end
+    local rawPosition = typeof(Pos) == "Vector3" and Pos or (Pos.Position or Pos.p)
+    local targetPosition = rawPosition + Vector3.new(0, 10, 0)
+    local Distance = (targetPosition - HRP.Position).Magnitude
+    local Speed = 300
+    local tweenInfo = TweenInfo.new(Distance / Speed, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(HRP, tweenInfo, {CFrame = CFrame.new(targetPosition)})
     tween:Play()
     tween.Completed:Wait()
 end
@@ -92,20 +94,29 @@ end
 -- Tên NPC
 local npcName = "Oni Soldier"
 
+-- Hàm lấy tất cả mob sống
+local function GetAllMobs()
+    local mobs = {}
+    for _, mob in pairs(workspace.Enemies:GetChildren()) do
+        if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+            if mob:FindFirstChild("HumanoidRootPart") and string.find(mob.Name, npcName) then
+                table.insert(mobs, mob)
+            end
+        end
+    end
+    return mobs
+end
+
 -- Hàm tìm mob gần nhất
 local function FindNearestMob()
     local closest, dist = nil, math.huge
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
 
-    for _, mob in pairs(workspace.Enemies:GetChildren()) do
-        if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-            if mob:FindFirstChild("HumanoidRootPart") and string.find(mob.Name, npcName) then
-                local mag = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-                if mag < dist then
-                    closest, dist = mob, mag
-                end
-            end
+    for _, mob in pairs(GetAllMobs()) do
+        local mag = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+        if mag < dist then
+            closest, dist = mob, mag
         end
     end
     return closest
@@ -122,45 +133,59 @@ task.spawn(function()
     platform.Name = "FlyingPlatform"
     platform.Parent = workspace
 
-    while task.wait(0.3) do
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then continue end
-
+    while task.wait(0.2) do
         if not _G.FarmEnabled then
-            -- Khi OFF farm: platform xuống dưới map, player đứng yên
-            platform.CFrame = CFrame.new(0, -500, 0)
+            platform.Transparency = 1
             continue
         end
 
         AutoHaki()
-        local target = FindNearestMob()
-        if target and target:FindFirstChild("HumanoidRootPart") and target:FindFirstChild("Humanoid") then
-            -- Tween tới mob
-            TweenTo(target.HumanoidRootPart.Position)
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local mobs = GetAllMobs()
 
-            -- Khi đã tới mob, giữ platform và player ở trên đầu mob
-            while _G.FarmEnabled 
-                and target.Parent 
-                and target:FindFirstChild("Humanoid") 
-                and target.Humanoid.Health > 0 do
+        if #mobs > 0 and hrp then
+            local target = FindNearestMob()
+            if target then
+                -- Di chuyển tới mob
+                topos(target.HumanoidRootPart.Position)
 
-                if target:FindFirstChild("HumanoidRootPart") and platform then
-                    local mobPos = target.HumanoidRootPart.Position
+                -- Giữ mob đứng yên
+                pcall(function()
+                    target.HumanoidRootPart.Anchored = true
+                end)
 
-                    -- Platform di chuyển theo mob
-                    platform.CFrame = CFrame.new(mobPos.X, mobPos.Y + 5, mobPos.Z)
+                -- Platform di chuyển theo mob
+                platform.Transparency = 1
+                platform.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 7, 0)
 
-                    -- Player luôn đứng trên platform
-                    if hrp then
-                        hrp.CFrame = platform.CFrame * CFrame.new(0, 3, 0)
-                    end
+                -- Người chơi đứng trên platform
+                hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
+
+                -- Đợi mob chết
+                repeat task.wait(0.2) until not target.Parent or target.Humanoid.Health <= 0
+
+                -- Bỏ anchor khi mob chết
+                if target and target:FindFirstChild("HumanoidRootPart") then
+                    target.HumanoidRootPart.Anchored = false
                 end
-
-                task.wait(0.1)
+            end
+        else
+            -- Không còn mob -> bay về RestPosition nhưng nhân vật vẫn có thể di chuyển và dùng skill
+            if hrp then
+                local distance = (hrp.Position - RestPosition).Magnitude
+                if distance > 1 then
+                    topos(RestPosition)
+                    platform.Transparency = 1
+                else
+                    -- Đã tới RestPosition -> dừng platform, không di chuyển tự động nữa
+                    platform.Transparency = 1
+                    -- Không anchored, người chơi vẫn tự do
+                end
             end
         end
     end
 end)
+
 
 -- GUI On/Off
 local ScreenGui = Instance.new("ScreenGui")
@@ -168,21 +193,21 @@ ScreenGui.Name = "FarmGUI"
 ScreenGui.Parent = game.CoreGui
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 200, 0, 60)
-Frame.Position = UDim2.new(0, 20, 0.5, -30)
+Frame.Size = UDim2.new(0, 200, 0, 120) -- tăng chiều cao để chứa 2 nút
+Frame.Position = UDim2.new(0, 20, 0.5, -60)
 Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Frame.BorderSizePixel = 0
 Frame.Active = true
 Frame.Draggable = true
 Frame.Parent = ScreenGui
 
--- Bo góc cho frame
 local Corner = Instance.new("UICorner")
 Corner.CornerRadius = UDim.new(0, 8)
 Corner.Parent = Frame
 
+-- Nút Farm
 local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(1, -10, 1, -10)
+toggleBtn.Size = UDim2.new(1, -10, 0, 50)
 toggleBtn.Position = UDim2.new(0, 5, 0, 5)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
 toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -192,21 +217,45 @@ toggleBtn.Font = Enum.Font.SourceSansBold
 toggleBtn.BorderSizePixel = 0
 toggleBtn.Parent = Frame
 
--- Bo góc cho button
 local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(0, 5)
 BtnCorner.Parent = toggleBtn
 
--- Hiệu ứng khi click
 toggleBtn.MouseButton1Click:Connect(function()
     _G.FarmEnabled = not _G.FarmEnabled
     toggleBtn.Text = _G.FarmEnabled and "⚔️ Farm: ON" or "🗡️ Farm: OFF"
     toggleBtn.BackgroundColor3 = _G.FarmEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
-    
-    -- Hiệu ứng click
-    toggleBtn:TweenSize(UDim2.new(0.95, 0, 0.95, 0), "Out", "Quad", 0.1, true)
-    task.wait(0.1)
-    toggleBtn:TweenSize(UDim2.new(1, -10, 1, -10), "Out", "Quad", 0.1, true)
+
+    toggleBtn:TweenSize(UDim2.new(0.95, 0, 0, 50), "Out", "Quad", 0.1, true)
+    wait(0.1)
+    toggleBtn:TweenSize(UDim2.new(1, -10, 0, 50), "Out", "Quad", 0.1, true)
+end)
+
+-- Nút Teleport
+local teleportBtn = Instance.new("TextButton")
+teleportBtn.Size = UDim2.new(1, -10, 0, 50)
+teleportBtn.Position = UDim2.new(0, 5, 0, 60)
+teleportBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 170)
+teleportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleportBtn.Text = "📡 Teleport"
+teleportBtn.TextScaled = true
+teleportBtn.Font = Enum.Font.SourceSansBold
+teleportBtn.BorderSizePixel = 0
+teleportBtn.Parent = Frame
+
+local TeleportCorner = Instance.new("UICorner")
+TeleportCorner.CornerRadius = UDim.new(0, 5)
+TeleportCorner.Parent = teleportBtn
+
+teleportBtn.MouseButton1Click:Connect(function()
+    local args = {
+        [1] = "InitiateTeleportToTemple"
+    }
+    game:GetService("ReplicatedStorage")
+        :WaitForChild("Modules")
+        :WaitForChild("Net")
+        :WaitForChild("RF/OniTempleTransportation")
+        :InvokeServer(unpack(args))
 end)
 
 print("🚀 Script loaded successfully!")

@@ -83,25 +83,31 @@ end)
 -- Tên NPC cần farm
 local npcName = "Oni Soldier"
 local hrp = LocalPlayer.Character.HumanoidRootPart
--- Platform bay
-local platform = Instance.new("Part")
-platform.Size = Vector3.new(6,1,6)
-platform.Anchored = true
-platform.CanCollide = true
-platform.Material = Enum.Material.WoodPlanks
-platform.Transparency = 1
-platform.Name = "FlyingPlatform"
-platform.CFrame = hrp.CFrame + Vector3.new(0,-5,0)
-platform.Parent = workspace
 
--- Giữ platform theo player
-task.spawn(function()
-    while task.wait(0.1) do
-        if platform and platform.Parent and hrp then
-            platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y -5, hrp.Position.Z)
-        end
+    local platform = Instance.new("Part")
+    platform.Size = Vector3.new(6, 1, 6)
+    platform.Anchored = true
+    platform.CanCollide = true
+    platform.Material = Enum.Material.WoodPlanks
+    platform.Transparency = 1
+    platform.Name = "FlyingPlatform"
+    platform.CFrame = hrp.CFrame + Vector3.new(0, 20, 0)
+    platform.Parent = workspace
+
+    repeat
+        task.wait(0.1)
+        AutoHaki()
+        pcall(function()
+            hrp.CFrame =npcName.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
+            if platform and platform.Parent then
+                platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3.5, hrp.Position.Z)
+            end
+        end)
+    until not npcName.Parent or npcName.Humanoid.Health <= 0
+
+    if platform and platform.Parent then
+        platform:Destroy()
     end
-end)
 
 -- Farm loop
 task.spawn(function()

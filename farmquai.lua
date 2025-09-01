@@ -1,23 +1,19 @@
 _G.SelectWeapon = "Melee"
-_G.BringAllMob = true
-_G.BringRange = 100 
-_G.FarmEnabled = false -- Trạng thái On/Off
+_G.FarmEnabled = false -- On/Off farm
 
 -- Load FastAttack
 loadstring(game:HttpGet("https://raw.githubusercontent.com/khoanguyen-dev1/scriptnotify/refs/heads/main/fastattack.lua"))()
 
-repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
+repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
 local LocalPlayer = game.Players.LocalPlayer
 
--- Chọn team Marines
+-- Auto chọn team Marines
 local desiredTeam = "Marines"
 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", desiredTeam)
-
 repeat
     task.wait(1)
     local chooseTeam = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ChooseTeam", true)
     local uiController = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("UIController", true)
-
     if chooseTeam and chooseTeam.Visible and uiController then
         for _, v in pairs(getgc(true)) do
             if type(v) == "function" and getfenv(v).script == uiController then
@@ -36,11 +32,9 @@ until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
 -- Hàm bật Haki
 function AutoHaki()
-    pcall(function()
-        if not LocalPlayer.Character:FindFirstChild("HasBuso") then
-            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
-        end
-    end)
+    if not LocalPlayer.Character:FindFirstChild("HasBuso") then
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
+    end
 end
 
 -- Danh sách melee
@@ -49,208 +43,97 @@ local meleeList = {
     "Superhuman","Death Step","Sharkman Karate","Electric Claw",
     "Dragon Talon","Godhuman","Sanguine Art"
 }
-
 local function isMeleeWeapon(toolName)
     for _, name in ipairs(meleeList) do
         if toolName == name then return true end
     end
     return false
 end
-
 function EquipWeapon(ToolSe)
-    pcall(function()
-        if not ToolSe then return end
-        if not isMeleeWeapon(ToolSe) then return end
-        local backpack = LocalPlayer.Backpack
-        local tool = backpack:FindFirstChild(ToolSe)
-        if tool and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid:EquipTool(tool)
-        end
-    end)
+    if not ToolSe then return end
+    if not isMeleeWeapon(ToolSe) then return end
+    local backpack = LocalPlayer.Backpack
+    local tool = backpack:FindFirstChild(ToolSe)
+    if tool and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid:EquipTool(tool)
+    end
 end
 
 -- Auto Equip
 task.spawn(function()
     while task.wait(0.5) do
         if _G.SelectWeapon == "Melee" and _G.FarmEnabled then
-            pcall(function()
-                for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
-                    if tool:IsA("Tool") and isMeleeWeapon(tool.Name) then
-                        EquipWeapon(tool.Name)
-                        break
-                    end
+            for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
+                if tool:IsA("Tool") and isMeleeWeapon(tool.Name) then
+                    EquipWeapon(tool.Name)
+                    break
                 end
-            end)
+            end
         end
     end
 end)
 
--- Tên NPC cần farm
+-- Tên NPC
 local npcName = "Oni Soldier"
-local platform = nil
 
--- Hàm di chuyển mượt mà
-local function topos(Pos)
-    local Player = game.Players.LocalPlayer
-    local HRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
-    if not HRP then return end
-    
-    local rawPosition = typeof(Pos) == "Vector3" and Pos or (Pos.Position or Pos.p)
-    local targetPosition = rawPosition + Vector3.new(0, 8, 0) -- Player cao hơn quái 8 studs
-    local Distance = (targetPosition - HRP.Position).Magnitude
-    
-    -- Nếu quá gần thì không cần tween
-    if Distance < 5 then
-        HRP.CFrame = CFrame.new(targetPosition)
-        return
-    end
-    
-    local Speed = 300 -- Tốc độ di chuyển
-    local tweenService = game:GetService("TweenService")
-    local tweenInfo = TweenInfo.new(Distance / Speed, Enum.EasingStyle.Linear)
-    local tween = tweenService:Create(HRP, tweenInfo, {CFrame = CFrame.new(targetPosition)})
-    
-    tween:Play()
-    -- Không wait để không block code
-end
-
--- Hàm tạo platform cho player đứng
-local function createStandPlatform()
-    if platform and platform.Parent then
-        platform:Destroy()
-    end
-    
-    pcall(function()
-        local hrp = LocalPlayer.Character.HumanoidRootPart
-        platform = Instance.new("Part")
-        platform.Size = Vector3.new(6, 1, 6) -- Đủ rộng để đứng
-        platform.Anchored = true
-        platform.CanCollide = true
-        platform.Material = Enum.Material.Neon
-        platform.BrickColor = BrickColor.new("Bright blue")
-        platform.Transparency = 0.7
-        platform.Name = "StandPlatform"
-        platform.CFrame = hrp.CFrame + Vector3.new(0, -3, 0) -- Dưới chân player
-        platform.Parent = workspace
-        
-        -- Thêm ánh sáng cho đẹp
-        local light = Instance.new("PointLight")
-        light.Color = Color3.fromRGB(0, 150, 255)
-        light.Brightness = 1
-        light.Range = 10
-        light.Parent = platform
-    end)
-end
-
--- Hàm gom mob về dưới platform
-local function bringMobs()
-    if not _G.BringAllMob or not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
-    
-    pcall(function()
-        local hrp = LocalPlayer.Character.HumanoidRootPart
-        
-        for _, mob in pairs(workspace.Enemies:GetChildren()) do
-            if mob.Name == npcName 
-            and mob:FindFirstChild("Humanoid") 
-            and mob:FindFirstChild("HumanoidRootPart") 
-            and mob.Humanoid.Health > 0 then
-                
-                local distance = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-                if distance <= _G.BringRange then
-                    -- Tối ưu hóa mob
-                    mob.HumanoidRootPart.Size = Vector3.new(60,60,60)
-                    mob.HumanoidRootPart.CanCollide = false
-                    mob.Humanoid:ChangeState(14)
-                    
-                    if mob:FindFirstChild("Head") then 
-                        mob.Head.CanCollide = false 
-                    end
-                    
-                    if mob.Humanoid:FindFirstChild("Animator") then 
-                        mob.Humanoid.Animator:Destroy() 
-                    end
-                    
-                    -- Đưa mob về DƯỚI platform (player ở trên, mob ở dưới)
-                    mob.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(
-                        math.random(-3,3), 
-                        -8, -- Dưới platform, tầm đánh của player
-                        math.random(-3,3)
-                    )
-                    mob.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
-                    mob.HumanoidRootPart.Anchored = true -- Giữ cố định
-                end
+-- Hàm tìm mob gần nhất
+function FindNearestMob()
+    local closest, dist = nil, math.huge
+    for _, mob in pairs(workspace.Enemies:GetChildren()) do
+        if mob.Name == npcName and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+            local mag = (LocalPlayer.Character.HumanoidRootPart.Position - mob.HumanoidRootPart.Position).magnitude
+            if mag < dist then
+                closest, dist = mob, mag
             end
         end
-        sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
-    end)
+    end
+    return closest
 end
 
--- Farm loop chính
+-- Farm loop
 task.spawn(function()
-    while task.wait(0.2) do -- Tăng delay để tween hoạt động mượt
-        if not _G.FarmEnabled then 
-            if platform and platform.Parent then
-                platform:Destroy()
-                platform = nil
-            end
-            continue 
+    local platform = Instance.new("Part")
+    platform.Size = Vector3.new(6, 1, 6)
+    platform.Anchored = true
+    platform.CanCollide = true
+    platform.Material = Enum.Material.WoodPlanks
+    platform.Transparency = 1
+    platform.Name = "FlyingPlatform"
+    platform.Parent = workspace
+
+    while task.wait(0.3) do
+        if not _G.FarmEnabled then
+            platform.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, -4, 0)
+            continue
         end
-        
-        pcall(function()
-            AutoHaki()
-            
-            local char = LocalPlayer.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if not char or not hrp then return end
 
-            -- Tìm NPC gần nhất
-            local target = nil
-            local nearestDistance = math.huge
-            
-            for _, mob in pairs(workspace.Enemies:GetChildren()) do
-                if mob.Name == npcName 
-                and mob:FindFirstChild("Humanoid") 
-                and mob:FindFirstChild("HumanoidRootPart") 
-                and mob.Humanoid.Health > 0 then
-                    
-                    local distance = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-                    if distance < nearestDistance then
-                        nearestDistance = distance
-                        target = mob
-                    end
-                end
+        AutoHaki()
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local target = FindNearestMob()
+
+        if target and hrp then
+            -- Teleport lên đầu mob
+            pcall(function()
+                hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
+            end)
+
+            -- Cập nhật vị trí platform giữ nhân vật
+            if platform and platform.Parent then
+                platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3.5, hrp.Position.Z)
             end
 
-            if target then
-                -- Sử dụng topos để di chuyển mượt mà (player sẽ ở cao hơn mob 8 studs)
-                if nearestDistance > 10 then -- Chỉ tween khi cần thiết
-                    topos(target.HumanoidRootPart.Position)
-                end
-                
-                -- Tạo StandPlatform cho player đứng nếu chưa có
-                if not platform or not platform.Parent then
-                    createStandPlatform()
-                end
-                
-                -- Cập nhật platform theo vị trí player (platform luôn dưới chân player)
-                if platform and platform.Parent then
-                    platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3, hrp.Position.Z)
-                end
-                
-                -- Gom tất cả mob về dưới platform (player trên, mob dưới)
-                bringMobs()
-            else
-                -- Không có mob thì xóa platform
-                if platform and platform.Parent then
-                    platform:Destroy()
-                    platform = nil
-                end
-            end
-        end)
+            -- Tấn công mob
+            pcall(function()
+                -- FastAttack xử lý
+            end)
+
+            -- Đợi mob chết
+            repeat task.wait(0.2) until not target.Parent or target.Humanoid.Health <= 0
+        end
     end
 end)
 
--- GUI On/Off với thiết kế đẹp hơn
+-- GUI On/Off
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "FarmGUI"
 ScreenGui.Parent = game.CoreGui
@@ -298,5 +181,3 @@ toggleBtn.MouseButton1Click:Connect(function()
 end)
 
 print("🚀 Script loaded successfully!")
-print("📍 Target: " .. npcName)
-print("⚡ Click button to toggle farming!")

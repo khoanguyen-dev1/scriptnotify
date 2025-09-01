@@ -34,12 +34,13 @@ repeat
     end
 until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
-
 -- Hàm bật Haki
 function AutoHaki()
-    if not LocalPlayer.Character:FindFirstChild("HasBuso") then
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
-    end
+    pcall(function()
+        if not LocalPlayer.Character:FindFirstChild("HasBuso") then
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
+        end
+    end)
 end
 
 -- Danh sách melee
@@ -57,115 +58,207 @@ local function isMeleeWeapon(toolName)
 end
 
 function EquipWeapon(ToolSe)
-    if not ToolSe then return end
-    if not isMeleeWeapon(ToolSe) then return end
-    local backpack = LocalPlayer.Backpack
-    local tool = backpack:FindFirstChild(ToolSe)
-    if tool and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid:EquipTool(tool)
-    end
+    pcall(function()
+        if not ToolSe then return end
+        if not isMeleeWeapon(ToolSe) then return end
+        local backpack = LocalPlayer.Backpack
+        local tool = backpack:FindFirstChild(ToolSe)
+        if tool and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid:EquipTool(tool)
+        end
+    end)
 end
 
 -- Auto Equip
 task.spawn(function()
     while task.wait(0.5) do
         if _G.SelectWeapon == "Melee" and _G.FarmEnabled then
-            for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
-                if tool:IsA("Tool") and isMeleeWeapon(tool.Name) then
-                    EquipWeapon(tool.Name)
-                    break
+            pcall(function()
+                for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
+                    if tool:IsA("Tool") and isMeleeWeapon(tool.Name) then
+                        EquipWeapon(tool.Name)
+                        break
+                    end
                 end
-            end
+            end)
         end
     end
 end)
 
 -- Tên NPC cần farm
 local npcName = "Oni Soldier"
-local hrp = LocalPlayer.Character.HumanoidRootPart
+local platform = nil
 
-    local platform = Instance.new("Part")
-    platform.Size = Vector3.new(6, 1, 6)
-    platform.Anchored = true
-    platform.CanCollide = true
-    platform.Material = Enum.Material.WoodPlanks
-    platform.Transparency = 1
-    platform.Name = "FlyingPlatform"
-    platform.CFrame = hrp.CFrame + Vector3.new(0, 20, 0)
-    platform.Parent = workspace
-
-    repeat
-        task.wait(0.1)
-        AutoHaki()
-        pcall(function()
-            hrp.CFrame =npcName.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
-            if platform and platform.Parent then
-                platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3.5, hrp.Position.Z)
-            end
-        end)
-    until not npcName.Parent or npcName.Humanoid.Health <= 0
-
+-- Hàm tạo platform
+local function createPlatform()
     if platform and platform.Parent then
         platform:Destroy()
     end
+    
+    pcall(function()
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        platform = Instance.new("Part")
+        platform.Size = Vector3.new(8, 1, 8)
+        platform.Anchored = true
+        platform.CanCollide = true
+        platform.Material = Enum.Material.WoodPlanks
+        platform.Transparency = 0.8
+        platform.Name = "FlyingPlatform"
+        platform.CFrame = hrp.CFrame + Vector3.new(0, 15, 0)
+        platform.Parent = workspace
+    end)
+end
 
--- Farm loop
-task.spawn(function()
-    while task.wait(0.5) do
-        if not _G.FarmEnabled then continue end
-        AutoHaki()
-
-        local char = LocalPlayer.Character
-        if not char or not hrp then continue end
-
-        -- Tìm NPC
-        local target = nil
+-- Hàm gom mob
+local function bringMobs()
+    if not _G.BringAllMob or not platform or not platform.Parent then return end
+    
+    pcall(function()
         for _, mob in pairs(workspace.Enemies:GetChildren()) do
-            if mob.Name == npcName and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-                target = mob
-                break
+            if mob.Name == npcName 
+            and mob:FindFirstChild("Humanoid") 
+            and mob:FindFirstChild("HumanoidRootPart") 
+            and mob.Humanoid.Health > 0 then
+                
+                local distance = (mob.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                if distance <= _G.BringRange then
+                    -- Tối ưu hóa mob
+                    mob.HumanoidRootPart.Size = Vector3.new(60,60,60)
+                    mob.HumanoidRootPart.CanCollide = false
+                    mob.Humanoid:ChangeState(14)
+                    
+                    if mob:FindFirstChild("Head") then 
+                        mob.Head.CanCollide = false 
+                    end
+                    
+                    if mob.Humanoid:FindFirstChild("Animator") then 
+                        mob.Humanoid.Animator:Destroy() 
+                    end
+                    
+                    -- Đưa mob về platform
+                    mob.HumanoidRootPart.CFrame = platform.CFrame * CFrame.new(
+                        math.random(-3,3), 
+                        3, 
+                        math.random(-3,3)
+                    )
+                    mob.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
+                end
             end
         end
+        sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
+    end)
+end
 
-        if target then
-            -- Teleport tới mob
-            hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0,20,0)
+-- Farm loop chính
+task.spawn(function()
+    while task.wait(0.1) do
+        if not _G.FarmEnabled then 
+            if platform and platform.Parent then
+                platform:Destroy()
+                platform = nil
+            end
+            continue 
+        end
+        
+        pcall(function()
+            AutoHaki()
+            
+            local char = LocalPlayer.Character
+            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            if not char or not hrp then return end
 
-            -- Gom mob lại
+            -- Tìm NPC gần nhất
+            local target = nil
+            local nearestDistance = math.huge
+            
             for _, mob in pairs(workspace.Enemies:GetChildren()) do
                 if mob.Name == npcName 
                 and mob:FindFirstChild("Humanoid") 
                 and mob:FindFirstChild("HumanoidRootPart") 
                 and mob.Humanoid.Health > 0 then
-                    mob.HumanoidRootPart.Size = Vector3.new(50,50,50)
-                    mob.HumanoidRootPart.CanCollide = false
-                    mob.Humanoid:ChangeState(14)
-                    if mob:FindFirstChild("Head") then mob.Head.CanCollide = false end
-                    if mob.Humanoid:FindFirstChild("Animator") then mob.Humanoid.Animator:Destroy() end
-                    sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge)
-
-                    -- Giữ mob ngay dưới platform, không bay lung tung
-                    mob.HumanoidRootPart.CFrame = platform.CFrame * CFrame.new(0,5,0)
-                    mob.HumanoidRootPart.Anchored = true
+                    
+                    local distance = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+                    if distance < nearestDistance then
+                        nearestDistance = distance
+                        target = mob
+                    end
                 end
             end
-        end
+
+            if target then
+                -- Tạo platform nếu chưa có
+                if not platform or not platform.Parent then
+                    createPlatform()
+                end
+                
+                -- Teleport tới mob
+                hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0)
+                
+                -- Cập nhật vị trí platform
+                if platform and platform.Parent then
+                    platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 4, hrp.Position.Z)
+                end
+                
+                -- Gom mob
+                bringMobs()
+            else
+                -- Không có mob thì xóa platform
+                if platform and platform.Parent then
+                    platform:Destroy()
+                    platform = nil
+                end
+            end
+        end)
     end
 end)
 
--- GUI On/Off
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local toggleBtn = Instance.new("TextButton", ScreenGui)
-toggleBtn.Size = UDim2.new(0,120,0,40)
-toggleBtn.Position = UDim2.new(0.5,-60,0.5,-20)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
-toggleBtn.Text = "Farm: OFF"
-toggleBtn.Active = true
-toggleBtn.Draggable = true
+-- GUI On/Off với thiết kế đẹp hơn
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FarmGUI"
+ScreenGui.Parent = game.CoreGui
 
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 200, 0, 60)
+Frame.Position = UDim2.new(0, 20, 0.5, -30)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+Frame.Parent = ScreenGui
+
+-- Bo góc cho frame
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 8)
+Corner.Parent = Frame
+
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(1, -10, 1, -10)
+toggleBtn.Position = UDim2.new(0, 5, 0, 5)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Text = "🗡️ Farm: OFF"
+toggleBtn.TextScaled = true
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.BorderSizePixel = 0
+toggleBtn.Parent = Frame
+
+-- Bo góc cho button
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 5)
+BtnCorner.Parent = toggleBtn
+
+-- Hiệu ứng khi click
 toggleBtn.MouseButton1Click:Connect(function()
     _G.FarmEnabled = not _G.FarmEnabled
-    toggleBtn.Text = _G.FarmEnabled and "Farm: ON" or "Farm: OFF"
-    toggleBtn.BackgroundColor3 = _G.FarmEnabled and Color3.fromRGB(0,170,0) or Color3.fromRGB(170,0,0)
+    toggleBtn.Text = _G.FarmEnabled and "⚔️ Farm: ON" or "🗡️ Farm: OFF"
+    toggleBtn.BackgroundColor3 = _G.FarmEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+    
+    -- Hiệu ứng click
+    toggleBtn:TweenSize(UDim2.new(0.95, 0, 0.95, 0), "Out", "Quad", 0.1, true)
+    wait(0.1)
+    toggleBtn:TweenSize(UDim2.new(1, -10, 1, -10), "Out", "Quad", 0.1, true)
 end)
+
+print("🚀 Script loaded successfully!")
+print("📍 Target: " .. npcName)
+print("⚡ Click button to toggle farming!")

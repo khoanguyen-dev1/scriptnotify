@@ -111,16 +111,18 @@ end
 
 -- Hàm gom mob
 local function bringMobs()
-    if not _G.BringAllMob or not platform or not platform.Parent then return end
+    if not _G.BringAllMob or not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
     
     pcall(function()
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        
         for _, mob in pairs(workspace.Enemies:GetChildren()) do
             if mob.Name == npcName 
             and mob:FindFirstChild("Humanoid") 
             and mob:FindFirstChild("HumanoidRootPart") 
             and mob.Humanoid.Health > 0 then
                 
-                local distance = (mob.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                local distance = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
                 if distance <= _G.BringRange then
                     -- Tối ưu hóa mob
                     mob.HumanoidRootPart.Size = Vector3.new(60,60,60)
@@ -135,11 +137,11 @@ local function bringMobs()
                         mob.Humanoid.Animator:Destroy() 
                     end
                     
-                    -- Đưa mob về platform
-                    mob.HumanoidRootPart.CFrame = platform.CFrame * CFrame.new(
-                        math.random(-3,3), 
-                        3, 
-                        math.random(-3,3)
+                    -- Đưa mob về dưới chân player (thay vì platform)
+                    mob.HumanoidRootPart.CFrame = hrp.CFrame * CFrame.new(
+                        math.random(-2,2), 
+                        -4, -- Dưới chân player
+                        math.random(-2,2)
                     )
                     mob.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
                 end
@@ -186,20 +188,29 @@ task.spawn(function()
             end
 
             if target then
-                -- Tạo platform nếu chưa có
+                -- Đứng trên đầu quái (chỉ cao hơn 5-7 studs)
+                hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 6, 0)
+                
+                -- Tạo platform nhỏ dưới chân (không cần thiết nhưng để đảm bảo)
                 if not platform or not platform.Parent then
-                    createPlatform()
+                    local smallPlatform = Instance.new("Part")
+                    smallPlatform.Size = Vector3.new(4, 0.5, 4)
+                    smallPlatform.Anchored = true
+                    smallPlatform.CanCollide = true
+                    smallPlatform.Material = Enum.Material.ForceField
+                    smallPlatform.Transparency = 0.9
+                    smallPlatform.Name = "StandPlatform"
+                    smallPlatform.CFrame = hrp.CFrame * CFrame.new(0, -3, 0)
+                    smallPlatform.Parent = workspace
+                    platform = smallPlatform
                 end
                 
-                -- Teleport tới mob
-                hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 15, 0)
-                
-                -- Cập nhật vị trí platform
+                -- Cập nhật platform dưới chân
                 if platform and platform.Parent then
-                    platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 4, hrp.Position.Z)
+                    platform.CFrame = hrp.CFrame * CFrame.new(0, -3, 0)
                 end
                 
-                -- Gom mob
+                -- Gom mob lại dưới chân
                 bringMobs()
             else
                 -- Không có mob thì xóa platform

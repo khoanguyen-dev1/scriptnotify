@@ -106,34 +106,41 @@ task.spawn(function()
     platform.Name = "FlyingPlatform"
     platform.Parent = workspace
 
-    while task.wait(0.3) do
+    while task.wait(0.2) do
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then continue end
+
         if not _G.FarmEnabled then
-            platform.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, -4, 0)
+            -- Nếu OFF farm thì platform chỉ giữ nhân vật đứng yên
+            if platform and platform.Parent then
+                platform.CFrame = hrp.CFrame * CFrame.new(0, -4, 0)
+            end
             continue
         end
 
         AutoHaki()
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
         local target = FindNearestMob()
+        if target and target:FindFirstChild("HumanoidRootPart") and target:FindFirstChild("Humanoid") then
+            -- Farm liên tục cho đến khi mob chết hoặc biến mất
+            while _G.FarmEnabled 
+                and target.Parent 
+                and target:FindFirstChild("Humanoid") 
+                and target.Humanoid.Health > 0 
+                and target:FindFirstChild("HumanoidRootPart") do
 
-        if target and hrp then
-            -- Teleport lên đầu mob
-            pcall(function()
-                hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
-            end)
+                pcall(function()
+                    -- Di chuyển player đứng trên đầu mob
+                    hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
 
-            -- Cập nhật vị trí platform giữ nhân vật
-            if platform and platform.Parent then
-                platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3.5, hrp.Position.Z)
+                    -- Cập nhật platform để nhân vật không rớt
+                    if platform and platform.Parent then
+                        platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3.5, hrp.Position.Z)
+                    end
+                end)
+
+                task.wait(0.1)
             end
-
-            -- Tấn công mob
-            pcall(function()
-                -- FastAttack xử lý
-            end)
-
-            -- Đợi mob chết
-            repeat task.wait(0.2) until not target.Parent or target.Humanoid.Health <= 0
         end
     end
 end)

@@ -103,7 +103,7 @@ task.spawn(function()
 
     while task.wait(0.3) do
         if not _G.FarmEnabled then
-            platform.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, -4, 0)
+            platform.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
             continue
         end
 

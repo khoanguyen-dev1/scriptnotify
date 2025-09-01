@@ -73,6 +73,22 @@ task.spawn(function()
     end
 end)
 
+-- Hàm Tween di chuyển
+local TweenService = game:GetService("TweenService")
+local function TweenTo(Pos)
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local targetPos = typeof(Pos) == "Vector3" and Pos or Pos.Position
+    targetPos = targetPos + Vector3.new(0, 20, 0) -- đứng trên mob
+    
+    local distance = (targetPos - hrp.Position).Magnitude
+    local speed = 300
+    local tweenInfo = TweenInfo.new(distance / speed, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
+    tween:Play()
+    tween.Completed:Wait()
+end
+
 -- Tên NPC
 local npcName = "Oni Soldier"
 
@@ -106,39 +122,33 @@ task.spawn(function()
     platform.Name = "FlyingPlatform"
     platform.Parent = workspace
 
-    while task.wait(0.2) do
+    while task.wait(0.3) do
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if not hrp then continue end
 
         if not _G.FarmEnabled then
-            -- Nếu OFF farm thì platform chỉ giữ nhân vật đứng yên
-            if platform and platform.Parent then
-                platform.CFrame = hrp.CFrame * CFrame.new(0, -4, 0)
-            end
+            -- Khi OFF farm: platform xuống dưới map, player đứng tự nhiên
+            platform.CFrame = CFrame.new(0, -500, 0)
             continue
         end
 
         AutoHaki()
-
         local target = FindNearestMob()
         if target and target:FindFirstChild("HumanoidRootPart") and target:FindFirstChild("Humanoid") then
-            -- Farm liên tục cho đến khi mob chết hoặc biến mất
+            -- Tween tới mob
+            TweenTo(target.HumanoidRootPart.Position)
+
+            -- Khi đã tới mob, giữ player đứng trên platform
             while _G.FarmEnabled 
                 and target.Parent 
                 and target:FindFirstChild("Humanoid") 
-                and target.Humanoid.Health > 0 
-                and target:FindFirstChild("HumanoidRootPart") do
+                and target.Humanoid.Health > 0 do
 
-                pcall(function()
-                    -- Di chuyển player đứng trên đầu mob
-                    hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)
+                if hrp and platform then
+                    platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3.5, hrp.Position.Z)
+                end
 
-                    -- Cập nhật platform để nhân vật không rớt
-                    if platform and platform.Parent then
-                        platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 3.5, hrp.Position.Z)
-                    end
-                end)
-
+                -- FastAttack xử lý ở đây
                 task.wait(0.1)
             end
         end
@@ -188,7 +198,7 @@ toggleBtn.MouseButton1Click:Connect(function()
     
     -- Hiệu ứng click
     toggleBtn:TweenSize(UDim2.new(0.95, 0, 0.95, 0), "Out", "Quad", 0.1, true)
-    wait(0.1)
+    task.wait(0.1)
     toggleBtn:TweenSize(UDim2.new(1, -10, 1, -10), "Out", "Quad", 0.1, true)
 end)
 

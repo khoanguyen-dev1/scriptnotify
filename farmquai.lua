@@ -8,8 +8,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/khoanguyen-dev1/scrip
 
 repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 local LocalPlayer = game.Players.LocalPlayer
-local hrp = LocalPlayer.Character:WaitForChild("HumanoidRootPart")
-
+local hrp = LocalPlayer.Character.HumanoidRootPart
 -- Chọn team Marines
 local desiredTeam = "Marines"
 game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", desiredTeam)
@@ -78,7 +77,7 @@ platform.Parent = workspace
 task.spawn(function()
     while task.wait(0.1) do
         if platform and platform.Parent and hrp then
-            platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y - 5, hrp.Position.Z)
+            platform.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y -5, hrp.Position.Z)
         end
     end
 end)
@@ -131,8 +130,7 @@ end)
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local toggleBtn = Instance.new("TextButton", ScreenGui)
 toggleBtn.Size = UDim2.new(0,120,0,40)
--- Nằm bên trái và giữa màn hình
-toggleBtn.Position = UDim2.new(0, 20, 0.5, -20)
+toggleBtn.Position = UDim2.new(0.5,-60,0.5,-20)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
 toggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
 toggleBtn.Text = "Farm: OFF"

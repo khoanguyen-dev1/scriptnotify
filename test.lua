@@ -171,8 +171,13 @@ local function toggleUI()
     end
 end
 
--- Gắn sự kiện click cho nút toggle
+-- Gắn sự kiện click cho nút toggle (thay thế nút hình ảnh cũ)
 ToggleButton.MouseButton1Click:Connect(toggleUI)
+
+-- Gắn thêm chức năng gửi phím End (chức năng của nút cũ)
+ToggleButton.MouseButton1Down:Connect(function()
+    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.End, false, game)
+end)
 
 -- Phím tắt Insert
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -181,28 +186,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
---//ImageButton gốc (giữ nguyên)
-local ScreenGui = Instance.new("ScreenGui")
-local ImageButton = Instance.new("ImageButton")
-local UICorner = Instance.new("UICorner")
-
-ScreenGui.Parent = game.CoreGui
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-ImageButton.Parent = ScreenGui
-ImageButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ImageButton.BorderSizePixel = 0
-ImageButton.Position = UDim2.new(0.120833337, 0, 0.0952890813, 0)
-ImageButton.Size = UDim2.new(0, 50, 0, 50)
-ImageButton.Draggable = true
-ImageButton.Image = "rbxthumb://type=GamePass&id=944258394&w=150&h=150"
-
-UICorner.CornerRadius = UDim.new(0, 10) 
-UICorner.Parent = ImageButton
-
-ImageButton.MouseButton1Down:Connect(function()
-    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.End, false, game)
-end)
+-- Nút UI đã thay thế nút hình ảnh cũ
 
 local function playSound()
     local sound = Instance.new("Sound", game:GetService("CoreGui"))
@@ -405,7 +389,8 @@ Tabs.Farm:AddToggle("FarmToggle", {
 task.spawn(function()
     task.wait(3)
     print("=== SCRIPT ĐÃ SẴN SÀNG ===")
-    print("- Nút Toggle UI ở bên trái màn hình")
+    print("- Nút UI ở bên trái màn hình (thay thế nút cũ)")
+    print("- Click nút: Toggle UI + Gửi phím End")
     print("- Phím tắt: INSERT để bật/tắt UI")
     print("- Phím tắt gốc: Left Ctrl để minimize")
     print("- Kéo thả nút để di chuyển")

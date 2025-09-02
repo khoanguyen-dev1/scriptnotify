@@ -31,18 +31,29 @@ until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
 -- // UI Fluent
 -- Load Fluent UI
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local Window = Fluent:CreateWindow({
-    Title = "Cousin Shop",
-    SubTitle = "Fluent UI - khoanguyen-dev",
-    TabWidth = 120,
-    Size = UDim2.fromOffset(520, 320),
-    Acrylic = true,
+-- Load WindUI
+local WindUI = loadstring(game:HttpGet("https://tree-hub.vercel.app/api/UI/WindUI"))()
+
+local Window = WindUI:CreateWindow({
+    Title = "WindUI Library",
+    Icon = "door-open",
+    Author = "Example UI",
+    Folder = "CloudHub",
+    Size = UDim2.fromOffset(580, 460),
+    Transparent = true,
     Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
+    SideBarWidth = 200,
+    --Background = "rbxassetid://13511292247", -- rbxassetid only
+    HasOutline = false,
+    KeySystem = { 
+        Key = { "1"},
+        Note = "The Key is '1`",
+        URL = "https://github.com/Footagesus/WindUI",
+        SaveKey = true, 
+    },
 })
 
--- GUI Button
+-- Tạo nút bật/tắt script
 local ScreenGui = Instance.new("ScreenGui")
 local ImageButton = Instance.new("ImageButton")
 local UICorner = Instance.new("UICorner")
@@ -53,7 +64,7 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ImageButton.Parent = ScreenGui
 ImageButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 ImageButton.BorderSizePixel = 0
-ImageButton.Position = UDim2.new(0.120833337, 0, 0.0952890813, 0)
+ImageButton.Position = UDim2.new(0.12, 0, 0.1, 0)
 ImageButton.Size = UDim2.new(0, 50, 0, 50)
 ImageButton.Draggable = true
 ImageButton.Image = "rbxthumb://type=GamePass&id=944258394&w=150&h=150"
@@ -61,42 +72,21 @@ ImageButton.Image = "rbxthumb://type=GamePass&id=944258394&w=150&h=150"
 UICorner.CornerRadius = UDim.new(0, 10) 
 UICorner.Parent = ImageButton
 
--- Click ImageButton để gửi phím End
+-- Trạng thái bật/tắt script
+local isVisible = true
 ImageButton.MouseButton1Down:Connect(function()
-    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.End, false, game)
+    isVisible = not isVisible
+    Window:SetVisible(isVisible) -- ẩn/hiện UI
 end)
 
 -- Âm thanh mở GUI
 local function playSound()
     local sound = Instance.new("Sound", game:GetService("CoreGui"))
     sound.SoundId = "rbxassetid://130785805"
-    sound.Volume = 10
+    sound.Volume = 5
     sound:Play()
 end
 playSound()
-
--- Fix lỗi Infinite Yield khi tìm DmgCounterButton
-local player = game:GetService("Players").LocalPlayer
-local success, err = pcall(function()
-    local buttons = player:WaitForChild("PlayerGui"):WaitForChild("Main"):WaitForChild("Settings"):WaitForChild("Buttons")
-
-    -- Chỉ chờ tối đa 5 giây để tránh infinite yield
-    local dmgButton = buttons:WaitForChild("DmgCounterButton", 5)
-
-    if dmgButton then
-        print("[INFO] Đã tìm thấy DmgCounterButton, sẵn sàng sử dụng!")
-        -- Ví dụ: kết nối sự kiện click
-        dmgButton.MouseButton1Click:Connect(function()
-            print("Bạn đã nhấn DmgCounterButton")
-        end)
-    else
-        warn("[WARNING] Không tìm thấy DmgCounterButton trong 5 giây!")
-    end
-end)
-
-if not success then
-    warn("[ERROR] Có lỗi khi truy cập GUI:", err)
-end
 
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" }),

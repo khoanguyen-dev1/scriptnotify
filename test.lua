@@ -46,7 +46,142 @@ local Tabs = {
     Farm = Window:AddTab({ Title = "Farm", Icon = "sword" })
 }
 local Options = Fluent.Options
---//ScreenGui
+
+-- ===== UI TOGGLE SYSTEM =====
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+-- Biến trạng thái UI
+local uiVisible = true
+local FluentUI = nil
+
+-- Tìm FluentUI sau khi tạo
+task.spawn(function()
+    task.wait(2) -- Đợi UI load xong
+    for _, gui in pairs(game.CoreGui:GetChildren()) do
+        if gui:IsA("ScreenGui") and (string.find(gui.Name:lower(), "fluent") or gui:FindFirstChild("Main")) then
+            FluentUI = gui
+            print("Đã tìm thấy FluentUI:", gui.Name)
+            break
+        end
+    end
+end)
+
+--//ScreenGui cho nút toggle
+local ToggleScreenGui = Instance.new("ScreenGui")
+local ToggleButton = Instance.new("TextButton")
+local ToggleCorner = Instance.new("UICorner")
+local Shadow = Instance.new("Frame")
+local ShadowCorner = Instance.new("UICorner")
+
+ToggleScreenGui.Name = "UIToggleGui"
+ToggleScreenGui.Parent = game.CoreGui
+ToggleScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ToggleScreenGui.ResetOnSpawn = false
+
+-- Nút Toggle UI
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Parent = ToggleScreenGui
+ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Position = UDim2.new(0, 10, 0.5, -25)
+ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.Text = "UI"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 16
+ToggleButton.Draggable = true
+
+ToggleCorner.CornerRadius = UDim.new(0, 10)
+ToggleCorner.Parent = ToggleButton
+
+-- Shadow effect
+Shadow.Name = "Shadow"
+Shadow.Parent = ToggleButton
+Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+Shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Shadow.BackgroundTransparency = 0.7
+Shadow.BorderSizePixel = 0
+Shadow.Position = UDim2.new(0.5, 2, 0.5, 2)
+Shadow.Size = UDim2.new(1, 0, 1, 0)
+Shadow.ZIndex = ToggleButton.ZIndex - 1
+
+ShadowCorner.CornerRadius = UDim.new(0, 10)
+ShadowCorner.Parent = Shadow
+
+-- Hiệu ứng hover
+ToggleButton.MouseEnter:Connect(function()
+    local tween = TweenService:Create(ToggleButton, TweenInfo.new(0.2), {
+        BackgroundColor3 = Color3.fromRGB(40, 40, 40),
+        Size = UDim2.new(0, 55, 0, 55)
+    })
+    tween:Play()
+end)
+
+ToggleButton.MouseLeave:Connect(function()
+    local tween = TweenService:Create(ToggleButton, TweenInfo.new(0.2), {
+        BackgroundColor3 = uiVisible and Color3.fromRGB(25, 25, 25) or Color3.fromRGB(220, 50, 50),
+        Size = UDim2.new(0, 50, 0, 50)
+    })
+    tween:Play()
+end)
+
+-- Hiệu ứng click
+ToggleButton.MouseButton1Down:Connect(function()
+    local clickTween = TweenService:Create(ToggleButton, TweenInfo.new(0.1), {
+        Size = UDim2.new(0, 45, 0, 45)
+    })
+    clickTween:Play()
+    clickTween.Completed:Connect(function()
+        local returnTween = TweenService:Create(ToggleButton, TweenInfo.new(0.1), {
+            Size = UDim2.new(0, 50, 0, 50)
+        })
+        returnTween:Play()
+    end)
+end)
+
+-- Hàm toggle UI
+local function toggleUI()
+    if FluentUI then
+        local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        
+        if uiVisible then
+            -- Ẩn UI
+            FluentUI.Enabled = false
+            ToggleButton.Text = ">"
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+            uiVisible = false
+            print("UI đã được ẩn")
+        else
+            -- Hiện UI
+            FluentUI.Enabled = true
+            ToggleButton.Text = "UI"
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+            uiVisible = true
+            print("UI đã được hiện")
+        end
+    else
+        print("Chưa tìm thấy FluentUI!")
+        -- Thử tìm lại
+        for _, gui in pairs(game.CoreGui:GetChildren()) do
+            if gui:IsA("ScreenGui") and gui ~= ToggleScreenGui and gui.Name ~= "RobloxGui" then
+                gui.Enabled = not gui.Enabled
+            end
+        end
+    end
+end
+
+-- Gắn sự kiện click cho nút toggle
+ToggleButton.MouseButton1Click:Connect(toggleUI)
+
+-- Phím tắt Insert
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
+        toggleUI()
+    end
+end)
+
+--//ImageButton gốc (giữ nguyên)
 local ScreenGui = Instance.new("ScreenGui")
 local ImageButton = Instance.new("ImageButton")
 local UICorner = Instance.new("UICorner")
@@ -152,7 +287,6 @@ task.spawn(function()
 end)
 
 -- Tween function
-local TweenService = game:GetService("TweenService")
 local function topos(Pos)
     local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not HRP then return end
@@ -256,7 +390,6 @@ task.spawn(function()
     end
 end)
 
-
 ----------------------------------------------------------------
 -- Gắn UI vào Tab Farm
 
@@ -268,6 +401,13 @@ Tabs.Farm:AddToggle("FarmToggle", {
     end
 })
 
-
-
-
+-- Thông báo script đã sẵn sàng
+task.spawn(function()
+    task.wait(3)
+    print("=== SCRIPT ĐÃ SẴN SÀNG ===")
+    print("- Nút Toggle UI ở bên trái màn hình")
+    print("- Phím tắt: INSERT để bật/tắt UI")
+    print("- Phím tắt gốc: Left Ctrl để minimize")
+    print("- Kéo thả nút để di chuyển")
+    print("========================")
+end)

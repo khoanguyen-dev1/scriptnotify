@@ -46,7 +46,6 @@ local Tabs = {
     Farm = Window:AddTab({ Title = "Farm", Icon = "sword" })
 }
 local Options = Fluent.Options
-local LocalPlayer = game.Players.LocalPlayer
 --//ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 local ImageButton = Instance.new("ImageButton")
@@ -268,6 +267,7 @@ Tabs.Farm:AddToggle("FarmToggle", {
         _G.FarmEnabled = state
     end
 })
+
 
 
 

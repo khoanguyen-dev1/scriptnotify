@@ -32,7 +32,7 @@ until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 -- // UI Fluent
 -- Load Fluent UI
 -- Load WindUI
-local WindUI = loadstring(game:HttpGet("https://tree-hub.vercel.app/api/UI/WindUI"))()
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
     Title = "WindUI Library",
@@ -284,4 +284,5 @@ Tabs.Farm:Toggle("FarmToggle", {
         _G.FarmEnabled = state
     end
 })
+
 

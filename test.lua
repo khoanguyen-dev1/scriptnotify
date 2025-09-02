@@ -104,17 +104,17 @@ local function BuyCousin(item)
     game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args))
 end
 
-Tabs.Main:AddButton({
+Tabs.Main:Button({
     Title = "Buy Summer",
     Description = "Mua Cousin Summer",
     Callback = function() BuyCousin("BuySummer") end
 })
-Tabs.Main:AddButton({
+Tabs.Main:Button({
     Title = "Buy Normal",
     Description = "Mua Cousin thường",
     Callback = function() BuyCousin("Buy") end
 })
-Tabs.Main:AddButton({
+Tabs.Main:Button({
     Title = "Buy Red Head",
     Description = "Mua Cousin Red Head",
     Callback = function() BuyCousin("BuyRedHead") end
@@ -277,7 +277,7 @@ end)
 ----------------------------------------------------------------
 -- Gắn UI vào Tab Farm
 
-Tabs.Farm:AddToggle("FarmToggle", {
+Tabs.Farm:Toggle("FarmToggle", {
     Title = "Auto Farm Oni Soldier",
     Default = false,
     Callback = function(state)

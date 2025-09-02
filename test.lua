@@ -30,6 +30,7 @@ repeat
 until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
 -- // UI Fluent
+-- Load Fluent UI
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local Window = Fluent:CreateWindow({
     Title = "Cousin Shop",
@@ -41,11 +42,68 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
+-- GUI Button
+local ScreenGui = Instance.new("ScreenGui")
+local ImageButton = Instance.new("ImageButton")
+local UICorner = Instance.new("UICorner")
+
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+ImageButton.Parent = ScreenGui
+ImageButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ImageButton.BorderSizePixel = 0
+ImageButton.Position = UDim2.new(0.120833337, 0, 0.0952890813, 0)
+ImageButton.Size = UDim2.new(0, 50, 0, 50)
+ImageButton.Draggable = true
+ImageButton.Image = "rbxthumb://type=GamePass&id=944258394&w=150&h=150"
+
+UICorner.CornerRadius = UDim.new(0, 10) 
+UICorner.Parent = ImageButton
+
+-- Click ImageButton để gửi phím End
+ImageButton.MouseButton1Down:Connect(function()
+    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.End, false, game)
+end)
+
+-- Âm thanh mở GUI
+local function playSound()
+    local sound = Instance.new("Sound", game:GetService("CoreGui"))
+    sound.SoundId = "rbxassetid://130785805"
+    sound.Volume = 10
+    sound:Play()
+end
+playSound()
+
+-- Fix lỗi Infinite Yield khi tìm DmgCounterButton
+local player = game:GetService("Players").LocalPlayer
+local success, err = pcall(function()
+    local buttons = player:WaitForChild("PlayerGui"):WaitForChild("Main"):WaitForChild("Settings"):WaitForChild("Buttons")
+
+    -- Chỉ chờ tối đa 5 giây để tránh infinite yield
+    local dmgButton = buttons:WaitForChild("DmgCounterButton", 5)
+
+    if dmgButton then
+        print("[INFO] Đã tìm thấy DmgCounterButton, sẵn sàng sử dụng!")
+        -- Ví dụ: kết nối sự kiện click
+        dmgButton.MouseButton1Click:Connect(function()
+            print("Bạn đã nhấn DmgCounterButton")
+        end)
+    else
+        warn("[WARNING] Không tìm thấy DmgCounterButton trong 5 giây!")
+    end
+end)
+
+if not success then
+    warn("[ERROR] Có lỗi khi truy cập GUI:", err)
+end
+
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" }),
     Farm = Window:AddTab({ Title = "Farm", Icon = "sword" })
 }
-local Options = Fluent.Options
+
+local LocalPlayer = game.Players.LocalPlayer
 
 -- Hàm gọi server (Main tab)
 local function BuyCousin(item)
@@ -225,6 +283,7 @@ task.spawn(function()
     end
 end)
 
+
 ----------------------------------------------------------------
 -- Gắn UI vào Tab Farm
 
@@ -236,35 +295,3 @@ Tabs.Farm:AddToggle("FarmToggle", {
     end
 })
 
-----------------------------------------------------------------
--- Nút On/Off ngoài UI Fluent
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ToggleUI"
-ScreenGui.Parent = game.CoreGui
-
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 60, 0, 30)
-ToggleBtn.Position = UDim2.new(1, -80, 0, 120) -- Góc phải trên
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 120, 30)
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.Font = Enum.Font.SourceSansBold
-ToggleBtn.TextSize = 18
-ToggleBtn.Text = "On"
-ToggleBtn.Parent = ScreenGui
-ToggleBtn.Active = true
-ToggleBtn.Draggable = true -- Kéo thả
-
-local uiVisible = true
-ToggleBtn.MouseButton1Click:Connect(function()
-    uiVisible = not uiVisible
-    if uiVisible then
-        Window:Show()
-        ToggleBtn.Text = "On"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 120, 30)
-    else
-        Window:Hide()
-        ToggleBtn.Text = "Off"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(120, 30, 30)
-    end
-end)

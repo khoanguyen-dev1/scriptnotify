@@ -1,5 +1,4 @@
 _G.SelectWeapon = "Melee"
-_G.FarmEnabled = false -- On/Off farm
 
 -- Load FastAttack
 loadstring(game:HttpGet("https://raw.githubusercontent.com/khoanguyen-dev1/scriptnotify/refs/heads/main/fastattack.lua"))()
@@ -30,9 +29,58 @@ repeat
     end
 until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
+-- // UI Fluent
+local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/fluent/source.lua"))()
+local Window = Fluent:CreateWindow({
+    Title = "Cousin Shop",
+    SubTitle = "Fluent UI - khoanguyen-dev",
+    TabWidth = 120,
+    Size = UDim2.fromOffset(520, 320),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
+    Farm = Window:AddTab({ Title = "Farm", Icon = "sword" })
+}
+
+local LocalPlayer = game.Players.LocalPlayer
+
+-- Hàm gọi server (Main tab)
+local function BuyCousin(item)
+    local args = {
+        [1] = "Cousin",
+        [2] = item
+    }
+    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args))
+end
+
+Tabs.Main:AddButton({
+    Title = "Buy Summer",
+    Description = "Mua Cousin Summer",
+    Callback = function() BuyCousin("BuySummer") end
+})
+Tabs.Main:AddButton({
+    Title = "Buy Normal",
+    Description = "Mua Cousin thường",
+    Callback = function() BuyCousin("Buy") end
+})
+Tabs.Main:AddButton({
+    Title = "Buy Red Head",
+    Description = "Mua Cousin Red Head",
+    Callback = function() BuyCousin("BuyRedHead") end
+})
+
+----------------------------------------------------------------
+-- Tab Farm
+
+_G.FarmEnabled = false
+
 -- Hàm bật Haki
-function AutoHaki()
-    if not LocalPlayer.Character:FindFirstChild("HasBuso") then
+local function AutoHaki()
+    if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("HasBuso") then
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
     end
 end
@@ -49,7 +97,7 @@ local function isMeleeWeapon(toolName)
     end
     return false
 end
-function EquipWeapon(ToolSe)
+local function EquipWeapon(ToolSe)
     if not ToolSe then return end
     if not isMeleeWeapon(ToolSe) then return end
     local backpack = LocalPlayer.Backpack
@@ -88,29 +136,37 @@ local function topos(Pos)
     tween.Completed:Wait()
 end
 
--- Tên NPC
+-- Tên NPC farm
 local npcName = "Oni Soldier"
 
--- Hàm tìm mob gần nhất
+-- Lấy mob
+local function GetAllMobs()
+    local mobs = {}
+    for _, mob in pairs(workspace.Enemies:GetChildren()) do
+        if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+            if mob:FindFirstChild("HumanoidRootPart") and string.find(mob.Name, npcName) then
+                table.insert(mobs, mob)
+            end
+        end
+    end
+    return mobs
+end
+
 local function FindNearestMob()
     local closest, dist = nil, math.huge
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
-
-    for _, mob in pairs(workspace.Enemies:GetChildren()) do
-        if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-            if mob:FindFirstChild("HumanoidRootPart") and string.find(mob.Name, npcName) then
-                local mag = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-                if mag < dist then
-                    closest, dist = mob, mag
-                end
-            end
+    for _, mob in pairs(GetAllMobs()) do
+        local mag = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+        if mag < dist then
+            closest, dist = mob, mag
         end
     end
     return closest
 end
 
 -- Farm loop
+local RestPosition = Vector3.new(-5501.65625, -4166.60205078125, 4013.425048828125)
 task.spawn(function()
     local platform = Instance.new("Part")
     platform.Size = Vector3.new(6, 1, 6)
@@ -129,78 +185,56 @@ task.spawn(function()
 
         AutoHaki()
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        local target = FindNearestMob()
+        local mobs = GetAllMobs()
 
-        if target and hrp then
-            -- Di chuyển tới mob
-            topos(target.HumanoidRootPart.Position)
+        if #mobs > 0 and hrp then
+            local target = FindNearestMob()
+            if target then
+                topos(target.HumanoidRootPart.Position)
+                pcall(function() target.HumanoidRootPart.Anchored = true end)
 
-            -- Giữ mob đứng yên
-            pcall(function()
-                target.HumanoidRootPart.CFrame = CFrame.new(target.HumanoidRootPart.Position.X, target.HumanoidRootPart.Position.Y, target.HumanoidRootPart.Position.Z)
-                target.HumanoidRootPart.Anchored = true
-            end)
+                -- Platform bay theo mob
+                platform.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 7, 0)
+                platform.Transparency = 1
 
-            -- Platform di chuyển theo mob
-            platform.Transparency = 0
-            platform.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 7, 0)
+                -- Ghép người chơi lên trên platform, khóa vị trí
+                hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
+                hrp.Anchored = true
 
-            -- Người chơi đứng trên platform
-            hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
+                -- Đợi mob chết
+                repeat task.wait(0.2) until not target.Parent or target.Humanoid.Health <= 0
 
-            -- Đợi mob chết
-            repeat task.wait(0.2) until not target.Parent or target.Humanoid.Health <= 0
-
-            -- Bỏ anchor khi mob chết
-            if target and target:FindFirstChild("HumanoidRootPart") then
-                target.HumanoidRootPart.Anchored = false
+                -- Bỏ anchor cho mob
+                if target and target:FindFirstChild("HumanoidRootPart") then
+                    target.HumanoidRootPart.Anchored = false
+                end
+            end
+        else
+            if hrp then
+                local distance = (hrp.Position - RestPosition).Magnitude
+                if distance > 1 then
+                    topos(RestPosition)
+                    platform.Transparency = 1
+                    hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
+                    hrp.Anchored = true
+                else
+                    platform.Transparency = 1
+                    hrp.Anchored = false -- cho phép tự do khi không farm
+                end
             end
         end
     end
 end)
 
--- GUI On/Off
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FarmGUI"
-ScreenGui.Parent = game.CoreGui
 
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 200, 0, 60)
-Frame.Position = UDim2.new(0, 20, 0.5, -30)
-Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Frame.BorderSizePixel = 0
-Frame.Active = true
-Frame.Draggable = true
-Frame.Parent = ScreenGui
+----------------------------------------------------------------
+-- Gắn UI vào Tab Farm
 
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 8)
-Corner.Parent = Frame
-
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(1, -10, 1, -10)
-toggleBtn.Position = UDim2.new(0, 5, 0, 5)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
-toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.Text = "🗡️ Farm: OFF"
-toggleBtn.TextScaled = true
-toggleBtn.Font = Enum.Font.SourceSansBold
-toggleBtn.BorderSizePixel = 0
-toggleBtn.Parent = Frame
-
-local BtnCorner = Instance.new("UICorner")
-BtnCorner.CornerRadius = UDim.new(0, 5)
-BtnCorner.Parent = toggleBtn
-
-toggleBtn.MouseButton1Click:Connect(function()
-    _G.FarmEnabled = not _G.FarmEnabled
-    toggleBtn.Text = _G.FarmEnabled and "⚔️ Farm: ON" or "🗡️ Farm: OFF"
-    toggleBtn.BackgroundColor3 = _G.FarmEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
-
-    toggleBtn:TweenSize(UDim2.new(0.95, 0, 0.95, 0), "Out", "Quad", 0.1, true)
-    wait(0.1)
-    toggleBtn:TweenSize(UDim2.new(1, -10, 1, -10), "Out", "Quad", 0.1, true)
-end)
-
-print("🚀 Script loaded successfully!")
+Tabs.Farm:AddToggle("FarmToggle", {
+    Title = "Auto Farm Oni Soldier",
+    Default = false,
+    Callback = function(state)
+        _G.FarmEnabled = state
+    end
+})
 

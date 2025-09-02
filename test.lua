@@ -30,7 +30,7 @@ repeat
 until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
 -- // UI Fluent
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/UI-Libs/main/fluent/source.lua"))()
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local Window = Fluent:CreateWindow({
     Title = "Cousin Shop",
     SubTitle = "Fluent UI - khoanguyen-dev",
@@ -269,3 +269,4 @@ local function playSound()
 end
 
 playSound()
+

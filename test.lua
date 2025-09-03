@@ -43,7 +43,7 @@ local I = T1:AddSection("Left", {
 local I1 = T1:AddSection("Right", {
     Name = "Farm boss"
 })
-local I2 = T1:AddSection("Right", {
+local I2 = T2:AddSection("Right", {
     Name = "Inventory"
 })
 
@@ -308,6 +308,7 @@ task.spawn(function()
         end
     end
 end)
+
 
 
 

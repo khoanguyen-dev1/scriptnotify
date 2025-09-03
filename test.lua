@@ -32,70 +32,21 @@ until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 -- // UI Fluent
 -- Load Fluent UI
 -- Load WindUI
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local MaruLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/LuaCrack/Setting/refs/heads/main/427daa95-6994-4738-805e-c1c4c5b577c7.txt"))()
 
-local Window = WindUI:CreateWindow({
-    Title = "WindUI Library",
-    Icon = "door-open",
-    Author = "Example UI",
-    Folder = "CloudHub",
-    Size = UDim2.fromOffset(580, 460),
-    Transparent = true,
-    Theme = "Dark",
-    SideBarWidth = 200,
-    --Background = "rbxassetid://13511292247", -- rbxassetid only
-    HasOutline = false,
-    KeySystem = { 
-        Key = { "1"},
-        Note = "The Key is '1`",
-        URL = "https://github.com/Footagesus/WindUI",
-        SaveKey = true, 
-    },
+local A = MaruLib:AddWindows()
+local T1 = A:T({ Name = "Main", })
+local T2 = A:T({ Name = "Inventory", })
+local I = T1:AddSection("Left", {
+    Name = "shop"
+})
+local I1 = T1:AddSection("Right", {
+    Name = "Farm boss"
+})
+local I2 = T1:AddSection("Right", {
+    Name = "Inventory"
 })
 
--- Tạo nút bật/tắt script
-local ScreenGui = Instance.new("ScreenGui")
-local ImageButton = Instance.new("ImageButton")
-local UICorner = Instance.new("UICorner")
-
-ScreenGui.Parent = game:GetService("CoreGui")
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
-ImageButton.Parent = ScreenGui
-ImageButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ImageButton.BorderSizePixel = 0
-ImageButton.Position = UDim2.new(0.12, 0, 0.1, 0)
-ImageButton.Size = UDim2.new(0, 50, 0, 50)
-ImageButton.Draggable = true
-ImageButton.Image = "rbxthumb://type=GamePass&id=944258394&w=150&h=150"
-
-UICorner.CornerRadius = UDim.new(0, 10) 
-UICorner.Parent = ImageButton
-
--- Trạng thái bật/tắt script
-local isVisible = true
-ImageButton.MouseButton1Down:Connect(function()
-    isVisible = not isVisible
-    Window:SetVisible(isVisible) -- ẩn/hiện UI
-end)
-
--- Âm thanh mở GUI
-local function playSound()
-    local sound = Instance.new("Sound", game:GetService("CoreGui"))
-    sound.SoundId = "rbxassetid://130785805"
-    sound.Volume = 5
-    sound:Play()
-end
-playSound()
-
-local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
-    Farm = Window:AddTab({ Title = "Farm", Icon = "sword" })
-}
-
-local LocalPlayer = game.Players.LocalPlayer
-
--- Hàm gọi server (Main tab)
 local function BuyCousin(item)
     local args = {
         [1] = "Cousin",
@@ -104,26 +55,104 @@ local function BuyCousin(item)
     game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args))
 end
 
-Tabs.Main:Button({
-    Title = "Buy Summer",
-    Description = "Mua Cousin Summer",
+
+I:AddButton({
+    Name ="Gacha Summer Token",
     Callback = function() BuyCousin("BuySummer") end
 })
-Tabs.Main:Button({
-    Title = "Buy Normal",
-    Description = "Mua Cousin thường",
+I:AddButton({
+    Name = "Gacha Fruit",
     Callback = function() BuyCousin("Buy") end
 })
-Tabs.Main:Button({
-    Title = "Buy Red Head",
-    Description = "Mua Cousin Red Head",
+I:AddButton({
+    Name ="Gacha Oni Token",
     Callback = function() BuyCousin("BuyRedHead") end
 })
+I:AddButton({
+    Name ="Buy Basic bait",
+    Callback = function() local args = {
+    [1] = "Craft",
+    [2] = "Basic Bait",
+    [3] = {}
+}
+game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack(args))
+ end
+})
+-- Tạo 2 paragraph
+local oni = I2:AddParagraph({
+    Title = "Oni Token",
+    Content = "Đang tải..."
+})
+
+local summer = I2:AddParagraph({
+    Title = "Summer Token",
+    Content = "Đang tải..."
+})
+
+-- Hàm cập nhật số lượng token
+local function UpdateTokens()
+    local args = { [1] = "getInventory" }
+    local inventory = game:GetService("ReplicatedStorage")
+        :WaitForChild("Remotes")
+        :WaitForChild("CommF_")
+        :InvokeServer(unpack(args))
+
+    local oniCount, summerCount = 0, 0
+
+    for _, item in pairs(inventory) do
+        if item.Name == "Oni Token" then
+            oniCount = item.Count
+        elseif item.Name == "Summer Token" then
+            summerCount = item.Count
+        end
+    end
+
+    oni:SetDesc("Oni Token Count: " .. oniCount)
+    summer:SetDesc("Summer Token Count: " .. summerCount)
+end
+
+-- Gọi 1 lần khi load
+UpdateTokens()
+
+-- Nếu muốn tự động refresh
+task.spawn(function()
+    while task.wait(0.1) do
+        UpdateTokens()
+    end
+end)
 
 ----------------------------------------------------------------
 -- Tab Farm
+I1:AddButton({
+    Name = "Teleport",
+    Callback = function()
+        -- Teleport đến tọa độ
+        topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))
+
+        -- Đợi chút cho chắc chắn đã đến nơi
+        task.wait(0.1)
+
+        -- Gọi server teleport
+        local args = {
+            [1] = "InitiateTeleportToTemple"
+        }
+
+        game:GetService("ReplicatedStorage")
+            :WaitForChild("Modules")
+            :WaitForChild("Net")
+            :WaitForChild("RF/OniTempleTransportation")
+            :InvokeServer(unpack(args))
+    end
+})
 
 _G.FarmEnabled = false
+
+I1:AddToggle({
+    Name = "Auto Farm Oni Soldier",
+    Callback = function(state)
+        _G.FarmEnabled = state
+    end
+})
 
 -- Hàm bật Haki
 local function AutoHaki()
@@ -231,58 +260,53 @@ task.spawn(function()
         end
 
         AutoHaki()
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local character = LocalPlayer.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character and character:FindFirstChild("Humanoid")
         local mobs = GetAllMobs()
 
-        if #mobs > 0 and hrp then
+        if #mobs > 0 and hrp and humanoid then
             local target = FindNearestMob()
-            if target then
-                topos(target.HumanoidRootPart.Position)
-                pcall(function() target.HumanoidRootPart.Anchored = true end)
+            if target and target:FindFirstChild("HumanoidRootPart") then
+                local mobHRP = target.HumanoidRootPart
 
-                -- Platform bay theo mob
-                platform.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 7, 0)
+                -- Di chuyển tới mob
+                topos(mobHRP.Position)
+
+                -- Giữ mob đứng yên
+                pcall(function() mobHRP.Anchored = true end)
+
+                -- Platform di chuyển theo mob
                 platform.Transparency = 1
+                platform.CFrame = mobHRP.CFrame * CFrame.new(0, 7, 0)
 
-                -- Ghép người chơi lên trên platform, khóa vị trí
-                hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
+                -- Anchor người chơi trên platform -> không thể di chuyển
                 hrp.Anchored = true
+                hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
 
                 -- Đợi mob chết
                 repeat task.wait(0.2) until not target.Parent or target.Humanoid.Health <= 0
 
-                -- Bỏ anchor cho mob
-                if target and target:FindFirstChild("HumanoidRootPart") then
-                    target.HumanoidRootPart.Anchored = false
-                end
+                -- Bỏ anchor mob và người chơi
+                if mobHRP then mobHRP.Anchored = false end
+                hrp.Anchored = false
             end
         else
+            -- Không còn mob -> bay về RestPosition
             if hrp then
                 local distance = (hrp.Position - RestPosition).Magnitude
                 if distance > 1 then
+                    hrp.Anchored = false -- Cho phép player tự di chuyển về RestPosition
                     topos(RestPosition)
                     platform.Transparency = 1
-                    hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
-                    hrp.Anchored = true
                 else
+                    -- Đã tới RestPosition -> dừng platform, người chơi tự do
                     platform.Transparency = 1
-                    hrp.Anchored = false -- cho phép tự do khi không farm
+                    hrp.Anchored = false
                 end
             end
         end
     end
 end)
-
-
-----------------------------------------------------------------
--- Gắn UI vào Tab Farm
-
-Tabs.Farm:Toggle("FarmToggle", {
-    Title = "Auto Farm Oni Soldier",
-    Default = false,
-    Callback = function(state)
-        _G.FarmEnabled = state
-    end
-})
 
 

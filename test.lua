@@ -107,8 +107,8 @@ local function UpdateTokens()
         end
     end
 
-    oni:SetDesc("Oni Token Count: " .. oniCount)
-    summer:SetDesc("Summer Token Count: " .. summerCount)
+    oni:Set("Oni Token Count: " .. oniCount)
+    summer:Set("Summer Token Count: " .. summerCount)
 end
 
 -- Gọi 1 lần khi load
@@ -308,5 +308,6 @@ task.spawn(function()
         end
     end
 end)
+
 
 

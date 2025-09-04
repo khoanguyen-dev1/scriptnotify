@@ -77,6 +77,7 @@ local Tabs = {
     Token = Window:AddTab({ Title = "Token", Icon = "" })
 }
 
+local Options = Fluent.Options
 
 local function BuyCousin(item)
     local args = {
@@ -339,6 +340,7 @@ task.spawn(function()
         end
     end
 end)
+
 
 
 

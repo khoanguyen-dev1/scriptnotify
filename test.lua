@@ -113,12 +113,12 @@ game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
  end
 })
 
-local oni = Tabs:Token:AddParagraph({
+local oni = Tabs.Token:AddParagraph({
     Title = "Oni Token",
     Content = "Đang tải..."
 })
 
-local summer = Tabs:Token:AddParagraph({
+local summer = Tabs.Token:AddParagraph({
     Title = "Summer Token",
     Content = "Đang tải..."
 })
@@ -191,6 +191,7 @@ Tabs.Farm:AddButton({
             :InvokeServer(unpack(args))
     end
 })
+
 
 
 

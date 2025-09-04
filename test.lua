@@ -194,14 +194,13 @@ Tabs.Farm:AddButton({
 
 _G.FarmEnabled = false
 
-Tabs.Farm:AddToggle({
+local Toggle = Tabs.Farm:AddToggle({
     Title = "Auto Farm Oni Soldier",
-    Description = "Farm Oni Soldier",
-    Callback = function(state)
-        _G.FarmEnabled = state
-    end
-})
+    Default = false})
 
+    Toggle:OnChanged(function(Value)
+	_G.FarmEnabled = Value
+end)  
 -- Hàm bật Haki
 local function AutoHaki()
     if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("HasBuso") then

@@ -29,22 +29,47 @@ repeat
     end
 until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local Window = Fluent:CreateWindow({
-    Title = "Fluent " .. Fluent.Version,
-    SubTitle = "by dawid",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
-})
+-- Load Fluent UI with error handling
+local success, Fluent = pcall(function()
+    return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+end)
 
-local Tabs = {
-    Main = Window:AddTab({ Title = "Shop", Icon = "" }),
-    Farm = Window:AddTab({ Title = "Farm", Icon = "" }),
-    Token = Window:AddTab({ Title = "Token", Icon = "" })
-}
+if not success or not Fluent then
+    warn("Failed to load Fluent UI library!")
+    return
+end
+
+-- Create Window with error handling
+local Window
+pcall(function()
+    Window = Fluent:CreateWindow({
+        Title = "Fluent " .. Fluent.Version,
+        SubTitle = "by dawid",
+        TabWidth = 160,
+        Size = UDim2.fromOffset(580, 460),
+        Acrylic = true,
+        Theme = "Dark",
+        MinimizeKey = Enum.KeyCode.LeftControl
+    })
+end)
+
+if not Window then
+    warn("Failed to create Fluent window!")
+    return
+end
+
+-- Create tabs with error handling
+local Tabs = {}
+pcall(function()
+    Tabs.Main = Window:AddTab({ Title = "Shop", Icon = "" })
+    Tabs.Farm = Window:AddTab({ Title = "Farm", Icon = "" })
+    Tabs.Token = Window:AddTab({ Title = "Token", Icon = "" })
+end)
+
+if not Tabs.Main or not Tabs.Farm or not Tabs.Token then
+    warn("Failed to create one or more tabs!")
+    return
+end
 
 --// Nút toggle UI ngoài màn hình (giống LeftControl)
 local ScreenGui = Instance.new("ScreenGui")
@@ -71,7 +96,9 @@ local uiVisible = true
 
 ToggleBtn.MouseButton1Click:Connect(function()
     uiVisible = not uiVisible
-    Window:Minimize() -- ẩn/hiện Fluent UI như LeftControl
+    if Window and Window.Minimize then
+        Window:Minimize() -- ẩn/hiện Fluent UI như LeftControl
+    end
     ToggleBtn.Text = uiVisible and "≡" or "⏷" -- đổi icon nút
 end)
 
@@ -85,64 +112,74 @@ local function BuyCousin(item)
     game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args))
 end
 
+-- Add buttons with error handling
+if Tabs.Main then
+    Tabs.Main:AddButton({
+        Title ="Gacha Summer Token",
+        Description = "Summer Token",
+        Callback = function() BuyCousin("BuySummer") end
+    })
+    Tabs.Main:AddButton({
+        Title = "Gacha Fruit",
+        Description = "Money",
+        Callback = function() BuyCousin("Buy") end
+    })
+    Tabs.Main:AddButton({
+        Title ="Gacha Oni Token",
+        Description = "Oni Token",
+        Callback = function() BuyCousin("BuyRedHead") end
+    })
+    Tabs.Main:AddButton({
+        Title ="Buy Basic bait",
+        Description = "Craft Basic bait",
+        Callback = function() 
+            local args = {
+                [1] = "Craft",
+                [2] = "Basic Bait",
+                [3] = {}
+            }
+            game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack(args))
+        end
+    })
+end
 
-Tabs.Main:AddButton({
-    Title ="Gacha Summer Token",
-     Description = "Summer Token",
-    Callback = function() BuyCousin("BuySummer") end
-})
-Tabs.Main:AddButton({
-    Title = "Gacha Fruit",
-    Description = "Money",
-    Callback = function() BuyCousin("Buy") end
-})
-Tabs.Main:AddButton({
-    Title ="Gacha Oni Token",
-    Description = "Oni Token",
-    Callback = function() BuyCousin("BuyRedHead") end
-})
-Tabs.Main:AddButton({
-    Title ="Buy Basic bait",
-    Description = "Craft Basic bait",
-    Callback = function() local args = {
-    [1] = "Craft",
-    [2] = "Basic Bait",
-    [3] = {}
-}
-game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack(args))
- end
-})
+local oni, summer
+if Tabs.Token then
+    oni = Tabs.Token:AddParagraph({
+        Title = "Oni Token",
+        Content = "Đang tải..."
+    })
 
-local oni = Tabs.Token:AddParagraph({
-    Title = "Oni Token",
-    Content = "Đang tải..."
-})
-
-local summer = Tabs.Token:AddParagraph({
-    Title = "Summer Token",
-    Content = "Đang tải..."
-})
+    summer = Tabs.Token:AddParagraph({
+        Title = "Summer Token",
+        Content = "Đang tải..."
+    })
+end
 
 -- Hàm cập nhật số lượng token
 local function UpdateTokens()
-    local args = { [1] = "getInventory" }
-    local inventory = game:GetService("ReplicatedStorage")
-        :WaitForChild("Remotes")
-        :WaitForChild("CommF_")
-        :InvokeServer(unpack(args))
+    if not oni or not summer then return end
+    
+    pcall(function()
+        local args = { [1] = "getInventory" }
+        local inventory = game:GetService("ReplicatedStorage")
+            :WaitForChild("Remotes")
+            :WaitForChild("CommF_")
+            :InvokeServer(unpack(args))
 
-    local oniCount, summerCount = 0, 0
+        local oniCount, summerCount = 0, 0
 
-    for _, item in pairs(inventory) do
-        if item.Name == "Oni Token" then
-            oniCount = item.Count
-        elseif item.Name == "Summer Token" then
-            summerCount = item.Count
+        for _, item in pairs(inventory) do
+            if item.Name == "Oni Token" then
+                oniCount = item.Count
+            elseif item.Name == "Summer Token" then
+                summerCount = item.Count
+            end
         end
-    end
 
-    oni:SetDesc("Oni Token Count: " .. oniCount)
-    summer:SetDesc("Summer Token Count: " .. summerCount)
+        oni:SetDesc("Oni Token Count: " .. oniCount)
+        summer:SetDesc("Summer Token Count: " .. summerCount)
+    end)
 end
 
 -- Gọi 1 lần khi load
@@ -150,7 +187,7 @@ UpdateTokens()
 
 -- Nếu muốn tự động refresh
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(5) do -- Changed from 0.1 to 5 seconds to reduce spam
         UpdateTokens()
     end
 end)
@@ -169,38 +206,45 @@ local function topos(Pos)
     tween.Completed:Wait()
 end
 
-Tabs.Farm:AddButton({
-    Title = "Teleport",
-    Description = "Teleport to Oni Claim",
-    Callback = function()
-        -- Teleport đến tọa độ
-        topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))
+if Tabs.Farm then
+    Tabs.Farm:AddButton({
+        Title = "Teleport",
+        Description = "Teleport to Oni Claim",
+        Callback = function()
+            -- Teleport đến tọa độ
+            topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))
 
-        -- Đợi chút cho chắc chắn đã đến nơi
-        task.wait(0.1)
+            -- Đợi chút cho chắc chắn đã đến nơi
+            task.wait(0.1)
 
-        -- Gọi server teleport
-        local args = {
-            [1] = "InitiateTeleportToTemple"
-        }
+            -- Gọi server teleport
+            local args = {
+                [1] = "InitiateTeleportToTemple"
+            }
 
-        game:GetService("ReplicatedStorage")
-            :WaitForChild("Modules")
-            :WaitForChild("Net")
-            :WaitForChild("RF/OniTempleTransportation")
-            :InvokeServer(unpack(args))
-    end
-})
+            game:GetService("ReplicatedStorage")
+                :WaitForChild("Modules")
+                :WaitForChild("Net")
+                :WaitForChild("RF/OniTempleTransportation")
+                :InvokeServer(unpack(args))
+        end
+    })
+end
 
 _G.FarmEnabled = false
 
-local Toggle = Tabs.Farm:AddToggle({
-    Title = "Auto Farm Oni Soldier",
-    Default = false})
+local Toggle
+if Tabs.Farm then
+    Toggle = Tabs.Farm:AddToggle({
+        Title = "Auto Farm Oni Soldier",
+        Default = false
+    })
 
     Toggle:OnChanged(function(Value)
-	_G.FarmEnabled = Value
-end)  
+        _G.FarmEnabled = Value
+    end)  
+end
+
 -- Hàm bật Haki
 local function AutoHaki()
     if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("HasBuso") then
@@ -243,21 +287,6 @@ task.spawn(function()
         end
     end
 end)
-
--- Tween function
-local TweenService = game:GetService("TweenService")
-local function topos(Pos)
-    local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not HRP then return end
-    local rawPosition = typeof(Pos) == "Vector3" and Pos or (Pos.Position or Pos.p)
-    local targetPosition = rawPosition + Vector3.new(0, 10, 0)
-    local Distance = (targetPosition - HRP.Position).Magnitude
-    local Speed = 300
-    local tweenInfo = TweenInfo.new(Distance / Speed, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(HRP, tweenInfo, {CFrame = CFrame.new(targetPosition)})
-    tween:Play()
-    tween.Completed:Wait()
-end
 
 -- Tên NPC farm
 local npcName = "Oni Soldier"

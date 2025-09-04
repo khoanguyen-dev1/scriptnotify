@@ -75,6 +75,8 @@ ToggleBtn.MouseButton1Click:Connect(function()
     ToggleBtn.Text = uiVisible and "≡" or "⏷" -- đổi icon nút
 end)
 
+local Options = Fluent.Options
+
 local function BuyCousin(item)
     local args = {
         [1] = "Cousin",
@@ -86,18 +88,22 @@ end
 
 Tabs.Main:AddButton({
     Title ="Gacha Summer Token",
+     Description = "Summer Token",
     Callback = function() BuyCousin("BuySummer") end
 })
 Tabs.Main:AddButton({
     Title = "Gacha Fruit",
+    Description = "Money",
     Callback = function() BuyCousin("Buy") end
 })
 Tabs.Main:AddButton({
     Title ="Gacha Oni Token",
+    Description = "Oni Token",
     Callback = function() BuyCousin("BuyRedHead") end
 })
 Tabs.Main:AddButton({
     Title ="Buy Basic bait",
+    Description = "Craft Basic bait",
     Callback = function() local args = {
     [1] = "Craft",
     [2] = "Basic Bait",
@@ -106,8 +112,24 @@ Tabs.Main:AddButton({
 game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack(args))
  end
 })
+
+local TweenService = game:GetService("TweenService")
+local function topos(Pos)
+    local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not HRP then return end
+    local rawPosition = typeof(Pos) == "Vector3" and Pos or (Pos.Position or Pos.p)
+    local targetPosition = rawPosition + Vector3.new(0, 10, 0)
+    local Distance = (targetPosition - HRP.Position).Magnitude
+    local Speed = 300
+    local tweenInfo = TweenInfo.new(Distance / Speed, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(HRP, tweenInfo, {CFrame = CFrame.new(targetPosition)})
+    tween:Play()
+    tween.Completed:Wait()
+end
+
 Tabs.Farm:AddButton({
     Title = "Teleport",
+    Description = "Teleport to Oni Claim",
     Callback = function()
         -- Teleport đến tọa độ
         topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))

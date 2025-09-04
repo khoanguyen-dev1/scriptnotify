@@ -52,7 +52,7 @@ ToggleBtn.Parent = ScreenGui
 ToggleBtn.Size = UDim2.new(0, 35, 0, 35)
 ToggleBtn.Position = UDim2.new(0, 10, 0.5, -17) -- Bên trái, giữa màn hình
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleBtn.Text = "K"
+ToggleBtn.Text = "≡"
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleBtn.TextSize = 20
 ToggleBtn.BorderSizePixel = 0
@@ -340,6 +340,7 @@ task.spawn(function()
         end
     end
 end)
+
 
 
 

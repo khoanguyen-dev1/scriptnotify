@@ -34,47 +34,6 @@ repeat
     end
 until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
--- Create Simple UI (Backup solution)
-local function CreateSimpleUI()
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "SimpleUI"
-    ScreenGui.Parent = game.CoreGui
-    
-    local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 400, 0, 500)
-    MainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    MainFrame.BorderSizePixel = 0
-    MainFrame.Parent = ScreenGui
-    
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 10)
-    UICorner.Parent = MainFrame
-    
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, 0, 0, 50)
-    Title.Position = UDim2.new(0, 0, 0, 0)
-    Title.BackgroundTransparency = 1
-    Title.Text = "Blox Fruits Script"
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Title.TextSize = 18
-    Title.Font = Enum.Font.SourceSansBold
-    Title.Parent = MainFrame
-    
-    local ScrollFrame = Instance.new("ScrollingFrame")
-    ScrollFrame.Size = UDim2.new(1, -20, 1, -70)
-    ScrollFrame.Position = UDim2.new(0, 10, 0, 60)
-    ScrollFrame.BackgroundTransparency = 1
-    ScrollFrame.ScrollBarThickness = 6
-    ScrollFrame.Parent = MainFrame
-    
-    local UIListLayout = Instance.new("UIListLayout")
-    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    UIListLayout.Padding = UDim.new(0, 5)
-    UIListLayout.Parent = ScrollFrame
-    
-    return ScreenGui, ScrollFrame
-end
 
 -- Try to load Fluent UI, fallback to simple UI
 local Window, Tabs = nil, {}
@@ -106,115 +65,38 @@ if success and Fluent then
         Window = nil
     end
 end
-
--- Use simple UI if Fluent failed
-local SimpleUI, SimpleScrollFrame = nil, nil
-if not Window then
-    print("Fluent UI failed, using simple UI")
-    SimpleUI, SimpleScrollFrame = CreateSimpleUI()
-end
-
--- UI Helper Functions
-local function CreateSimpleButton(text, callback)
-    if not SimpleScrollFrame then return end
-    
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, 0, 0, 35)
-    Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Button.Text = text
-    Button.TextSize = 14
-    Button.Font = Enum.Font.SourceSans
-    Button.Parent = SimpleScrollFrame
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 5)
-    corner.Parent = Button
-    
-    Button.MouseButton1Click:Connect(callback)
-    
-    -- Update scroll frame size
-    SimpleScrollFrame.CanvasSize = UDim2.new(0, 0, 0, #SimpleScrollFrame:GetChildren() * 40)
-end
-
-local function CreateSimpleToggle(text, callback)
-    if not SimpleScrollFrame then return end
-    
-    local ToggleFrame = Instance.new("Frame")
-    ToggleFrame.Size = UDim2.new(1, 0, 0, 35)
-    ToggleFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    ToggleFrame.Parent = SimpleScrollFrame
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 5)
-    corner.Parent = ToggleFrame
-    
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(0.7, 0, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Label.TextSize = 14
-    Label.Font = Enum.Font.SourceSans
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = ToggleFrame
-    
-    local ToggleButton = Instance.new("TextButton")
-    ToggleButton.Size = UDim2.new(0, 60, 0, 25)
-    ToggleButton.Position = UDim2.new(1, -70, 0.5, -12)
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    ToggleButton.Text = "OFF"
-    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleButton.TextSize = 12
-    ToggleButton.Font = Enum.Font.SourceSansBold
-    ToggleButton.Parent = ToggleFrame
-    
-    local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0, 12)
-    toggleCorner.Parent = ToggleButton
-    
-    local isToggled = false
-    ToggleButton.MouseButton1Click:Connect(function()
-        isToggled = not isToggled
-        if isToggled then
-            ToggleButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-            ToggleButton.Text = "ON"
-        else
-            ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-            ToggleButton.Text = "OFF"
-        end
-        callback(isToggled)
-    end)
-    
-    -- Update scroll frame size
-    SimpleScrollFrame.CanvasSize = UDim2.new(0, 0, 0, #SimpleScrollFrame:GetChildren() * 40)
-end
-
--- Toggle UI Button
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 35, 0, 35)
-ToggleBtn.Position = UDim2.new(0, 10, 0.5, -17)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleBtn.Text = "≡"
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.TextSize = 20
-ToggleBtn.BorderSizePixel = 0
-ToggleBtn.Parent = game.CoreGui
-
+-- Tạo nút nhỏ ON/OFF
+local ScreenGui = Instance.new("ScreenGui")
+local ImageButton = Instance.new("ImageButton")
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 6)
-UICorner.Parent = ToggleBtn
 
-local uiVisible = true
-ToggleBtn.MouseButton1Click:Connect(function()
-    uiVisible = not uiVisible
-    if Window then
-        pcall(function() Window:Minimize() end)
-    elseif SimpleUI then
-        SimpleUI.Enabled = uiVisible
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+ImageButton.Parent = ScreenGui
+ImageButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- đỏ = Off
+ImageButton.BorderSizePixel = 0
+ImageButton.Position = UDim2.new(0.12, 0, 0.1, 0)
+ImageButton.Size = UDim2.new(0, 50, 0, 50)
+ImageButton.Draggable = true
+ImageButton.AutoButtonColor = false
+ImageButton.Image = "" -- bỏ hình ảnh
+
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = ImageButton
+
+-- Trạng thái
+local isOn = true -- mặc định hiển thị window
+
+ImageButton.MouseButton1Click:Connect(function()
+    isOn = not isOn
+    if isOn then
+        ImageButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- xanh = On
+        Window:Minimize(false) -- hiện lại Window
+    else
+        ImageButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- đỏ = Off
+        Window:Minimize(true) -- ẩn Window
     end
-    ToggleBtn.Text = uiVisible and "≡" or "⏷"
 end)
 
 -- Core Functions
@@ -227,103 +109,89 @@ end
 
 -- Add UI Elements
 if Tabs.Main then
-    -- Fluent UI
+    -- Các button cho Main Tab
     Tabs.Main:AddButton({
         Title = "Gacha Summer Token",
         Description = "Summer Token",
         Callback = function() BuyCousin("BuySummer") end
     })
+
     Tabs.Main:AddButton({
         Title = "Gacha Fruit",
         Description = "Money",
         Callback = function() BuyCousin("Buy") end
     })
+
     Tabs.Main:AddButton({
         Title = "Gacha Oni Token",
         Description = "Oni Token",
         Callback = function() BuyCousin("BuyRedHead") end
     })
-else
-    -- Simple UI
-    CreateSimpleButton("Gacha Summer Token", function() BuyCousin("BuySummer") end)
-    CreateSimpleButton("Gacha Fruit", function() BuyCousin("Buy") end)
-    CreateSimpleButton("Gacha Oni Token", function() BuyCousin("BuyRedHead") end)
-    CreateSimpleButton("Buy Basic Bait", function()
-        pcall(function()
-            local args = { [1] = "Craft", [2] = "Basic Bait", [3] = {} }
-            game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack(args))
-        end)
-    end)
+
+    Tabs.Main:AddButton({
+        Title = "Buy Basic bait",
+        Description = "Craft Basic Bait",
+        Callback = function()
+            local args = {
+                [1] = "Craft",
+                [2] = "Basic Bait",
+                [3] = {}
+            }
+            game:GetService("ReplicatedStorage")
+                :WaitForChild("Modules")
+                :WaitForChild("Net")
+                :WaitForChild("RF")
+                :WaitForChild("Craft")
+                :InvokeServer(unpack(args))
+        end
+    })
 end
 
 -- Token Display (Simple version)
-if not Tabs.Token then
-    -- Create simple token display
-    if SimpleScrollFrame then
-        local TokenFrame = Instance.new("Frame")
-        TokenFrame.Size = UDim2.new(1, 0, 0, 60)
-        TokenFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        TokenFrame.Parent = SimpleScrollFrame
-        
-        local tokenCorner = Instance.new("UICorner")
-        tokenCorner.CornerRadius = UDim.new(0, 5)
-        tokenCorner.Parent = TokenFrame
-        
-        local OniLabel = Instance.new("TextLabel")
-        OniLabel.Size = UDim2.new(1, -20, 0.5, 0)
-        OniLabel.Position = UDim2.new(0, 10, 0, 5)
-        OniLabel.BackgroundTransparency = 1
-        OniLabel.Text = "Oni Token: Loading..."
-        OniLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        OniLabel.TextSize = 14
-        OniLabel.Font = Enum.Font.SourceSans
-        OniLabel.TextXAlignment = Enum.TextXAlignment.Left
-        OniLabel.Parent = TokenFrame
-        
-        local SummerLabel = Instance.new("TextLabel")
-        SummerLabel.Size = UDim2.new(1, -20, 0.5, 0)
-        SummerLabel.Position = UDim2.new(0, 10, 0.5, 0)
-        SummerLabel.BackgroundTransparency = 1
-        SummerLabel.Text = "Summer Token: Loading..."
-        SummerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        SummerLabel.TextSize = 14
-        SummerLabel.Font = Enum.Font.SourceSans
-        SummerLabel.TextXAlignment = Enum.TextXAlignment.Left
-        SummerLabel.Parent = TokenFrame
-        
-        -- Update tokens function
-        local function UpdateTokens()
-            pcall(function()
-                local args = { [1] = "getInventory" }
-                local inventory = game:GetService("ReplicatedStorage")
-                    :WaitForChild("Remotes")
-                    :WaitForChild("CommF_")
-                    :InvokeServer(unpack(args))
+if Tabs.Token then
+    local oni = Tabs.Token:AddParagraph({
+        Title = "Oni Token",
+        Content = "Đang tải..."
+    })
 
-                local oniCount, summerCount = 0, 0
-                if inventory then
-                    for _, item in pairs(inventory) do
-                        if item.Name == "Oni Token" then
-                            oniCount = item.Count
-                        elseif item.Name == "Summer Token" then
-                            summerCount = item.Count
-                        end
-                    end
-                end
+    local summer = Tabs.Token:AddParagraph({
+        Title = "Summer Token",
+        Content = "Đang tải..."
+    })
 
-                OniLabel.Text = "Oni Token: " .. oniCount
-                SummerLabel.Text = "Summer Token: " .. summerCount
-            end)
+    -- Hàm cập nhật số lượng token
+    local function UpdateTokens()
+        local args = { [1] = "getInventory" }
+        local inventory = game:GetService("ReplicatedStorage")
+            :WaitForChild("Remotes")
+            :WaitForChild("CommF_")
+            :InvokeServer(unpack(args))
+
+        local oniCount, summerCount = 0, 0
+
+        for _, item in pairs(inventory) do
+            if item.Name == "Oni Token" then
+                oniCount = item.Count
+            elseif item.Name == "Summer Token" then
+                summerCount = item.Count
+            end
         end
 
-        UpdateTokens()
-        task.spawn(function()
-            while task.wait(5) do
-                UpdateTokens()
-            end
-        end)
+        oni:SetDesc("Oni Token Count: " .. oniCount)
+        summer:SetDesc("Summer Token Count: " .. summerCount)
     end
+
+    -- Gọi 1 lần khi load
+    UpdateTokens()
+
+    -- Nếu muốn tự động refresh
+    task.spawn(function()
+        while task.wait(0.5) do -- refresh mỗi 0.5s cho nhẹ
+            UpdateTokens()
+        end
+    end)
 end
+
 
 -- Teleport and Farm Functions
 local TweenService = game:GetService("TweenService")
@@ -348,47 +216,31 @@ if Tabs.Farm then
         Title = "Teleport to Oni Claim",
         Description = "Teleport",
         Callback = function()
-            topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))
+            topos(Vector3.new(-689.4838, 15.3933, 1582.8720))
             task.wait(0.1)
-            pcall(function()
-                local args = { [1] = "InitiateTeleportToTemple" }
-                game:GetService("ReplicatedStorage")
-                    :WaitForChild("Modules")
-                    :WaitForChild("Net")
-                    :WaitForChild("RF/OniTempleTransportation")
-                    :InvokeServer(unpack(args))
-            end)
-        end
-    })
-else
-    CreateSimpleButton("Teleport to Oni Claim", function()
-        topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))
-        task.wait(0.1)
-        pcall(function()
-            local args = { [1] = "InitiateTeleportToTemple" }
+            local args = {
+                [1] = "InitiateTeleportToTemple"
+            }
+
             game:GetService("ReplicatedStorage")
                 :WaitForChild("Modules")
                 :WaitForChild("Net")
                 :WaitForChild("RF/OniTempleTransportation")
                 :InvokeServer(unpack(args))
-        end)
-    end)
+        end
+    })
 end
+
+
+
 
 -- Farm Variables
 _G.FarmEnabled = false
 
 -- Add farm toggle
 if Tabs.Farm then
-    local Toggle = Tabs.Farm:AddToggle({
-        Title = "Auto Farm Oni Soldier",
-        Default = false
-    })
+   local Toggle = Tabs.Farm:AddToggle("MyToggle", {Title = "Auto Farm Oni Soldier", Default = false })
     Toggle:OnChanged(function(Value)
-        _G.FarmEnabled = Value
-    end)
-else
-    CreateSimpleToggle("Auto Farm Oni Soldier", function(Value)
         _G.FarmEnabled = Value
     end)
 end

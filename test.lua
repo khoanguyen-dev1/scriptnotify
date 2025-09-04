@@ -106,3 +106,24 @@ Tabs.Main:AddButton({
 game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack(args))
  end
 })
+Tabs.Farm:AddButton({
+    Title = "Teleport",
+    Callback = function()
+        -- Teleport đến tọa độ
+        topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))
+
+        -- Đợi chút cho chắc chắn đã đến nơi
+        task.wait(0.1)
+
+        -- Gọi server teleport
+        local args = {
+            [1] = "InitiateTeleportToTemple"
+        }
+
+        game:GetService("ReplicatedStorage")
+            :WaitForChild("Modules")
+            :WaitForChild("Net")
+            :WaitForChild("RF/OniTempleTransportation")
+            :InvokeServer(unpack(args))
+    end
+})

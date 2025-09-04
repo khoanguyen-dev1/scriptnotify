@@ -1,4 +1,4 @@
-
+_G.SelectWeapon = "Melee"
 
 -- Load FastAttack
 loadstring(game:HttpGet("https://raw.githubusercontent.com/khoanguyen-dev1/scriptnotify/refs/heads/main/fastattack.lua"))()
@@ -56,7 +56,7 @@ ToggleBtn.Parent = ScreenGui
 ToggleBtn.Size = UDim2.new(0, 35, 0, 35)
 ToggleBtn.Position = UDim2.new(0, 10, 0.5, -17) -- Bên trái, giữa màn hình
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleBtn.Text = "K"
+ToggleBtn.Text = "≡"
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleBtn.TextSize = 20
 ToggleBtn.BorderSizePixel = 0
@@ -74,6 +74,7 @@ ToggleBtn.MouseButton1Click:Connect(function()
     Window:Minimize() -- ẩn/hiện Fluent UI như LeftControl
     ToggleBtn.Text = uiVisible and "≡" or "⏷" -- đổi icon nút
 end)
+
 local function BuyCousin(item)
     local args = {
         [1] = "Cousin",
@@ -84,19 +85,19 @@ end
 
 
 Tabs.Main:AddButton({
-    Name ="Gacha Summer Token",
+    Title ="Gacha Summer Token",
     Callback = function() BuyCousin("BuySummer") end
 })
 Tabs.Main:AddButton({
-    Name = "Gacha Fruit",
+    Title = "Gacha Fruit",
     Callback = function() BuyCousin("Buy") end
 })
 Tabs.Main:AddButton({
-    Name ="Gacha Oni Token",
+    Title ="Gacha Oni Token",
     Callback = function() BuyCousin("BuyRedHead") end
 })
 Tabs.Main:AddButton({
-    Name ="Buy Basic bait",
+    Title ="Buy Basic bait",
     Callback = function() local args = {
     [1] = "Craft",
     [2] = "Basic Bait",

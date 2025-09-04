@@ -113,48 +113,6 @@ game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
  end
 })
 
-local oni = Tabs:Token:AddParagraph({
-    Title = "Oni Token",
-    Content = "Đang tải..."
-})
-
-local summer = Tabs:Token:AddParagraph({
-    Title = "Summer Token",
-    Content = "Đang tải..."
-})
-
--- Hàm cập nhật số lượng token
-local function UpdateTokens()
-    local args = { [1] = "getInventory" }
-    local inventory = game:GetService("ReplicatedStorage")
-        :WaitForChild("Remotes")
-        :WaitForChild("CommF_")
-        :InvokeServer(unpack(args))
-
-    local oniCount, summerCount = 0, 0
-
-    for _, item in pairs(inventory) do
-        if item.Name == "Oni Token" then
-            oniCount = item.Count
-        elseif item.Name == "Summer Token" then
-            summerCount = item.Count
-        end
-    end
-
-    oni:SetDesc("Oni Token Count: " .. oniCount)
-    summer:SetDesc("Summer Token Count: " .. summerCount)
-end
-
--- Gọi 1 lần khi load
-UpdateTokens()
-
--- Nếu muốn tự động refresh
-task.spawn(function()
-    while task.wait(0.1) do
-        UpdateTokens()
-    end
-end)
-
 local TweenService = game:GetService("TweenService")
 local function topos(Pos)
     local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -355,3 +313,4 @@ task.spawn(function()
         end
     end
 end)
+

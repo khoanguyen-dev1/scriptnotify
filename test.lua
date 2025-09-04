@@ -32,20 +32,23 @@ until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 -- // UI Fluent
 -- Load Fluent UI
 -- Load WindUI
-local MaruLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/LuaCrack/Setting/refs/heads/main/427daa95-6994-4738-805e-c1c4c5b577c7.txt"))()
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local Window = Fluent:CreateWindow({
+    Title = "Fluent " .. Fluent.Version,
+    SubTitle = "by dawid",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
 
-local A = MaruLib:AddWindows()
-local T1 = A:T({ Name = "Main", })
-local T2 = A:T({ Name = "Inventory", })
-local I = T1:AddSection("Left", {
-    Name = "shop"
-})
-local I1 = T1:AddSection("Right", {
-    Name = "Farm boss"
-})
-local I2 = T2:AddSection("Right", {
-    Name = "Inventory"
-})
+local Tabs = {
+    Main = Window:AddTab({ Title = "Shop", Icon = "" }),
+    Farm = Window:AddTab({ Title = "Farm", Icon = "" }),
+    Token = Window:AddTab({ Title = "Token", Icon = "" })
+}
+
 
 local function BuyCousin(item)
     local args = {
@@ -56,19 +59,19 @@ local function BuyCousin(item)
 end
 
 
-I:AddButton({
+Tabs.Main:AddButton({
     Name ="Gacha Summer Token",
     Callback = function() BuyCousin("BuySummer") end
 })
-I:AddButton({
+Tabs.Main:AddButton({
     Name = "Gacha Fruit",
     Callback = function() BuyCousin("Buy") end
 })
-I:AddButton({
+Tabs.Main:AddButton({
     Name ="Gacha Oni Token",
     Callback = function() BuyCousin("BuyRedHead") end
 })
-I:AddButton({
+Tabs.Main:AddButton({
     Name ="Buy Basic bait",
     Callback = function() local args = {
     [1] = "Craft",
@@ -79,12 +82,12 @@ game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
  end
 })
 -- Tạo 2 paragraph
-local oni = I2:AddParagraph({
+local oni = Tabs:Token:AddParagraph({
     Title = "Oni Token",
     Content = "Đang tải..."
 })
 
-local summer = I2:AddParagraph({
+local summer = Tabs:Token:AddParagraph({
     Title = "Summer Token",
     Content = "Đang tải..."
 })
@@ -107,8 +110,8 @@ local function UpdateTokens()
         end
     end
 
-    oni:Set("Oni Token Count: " .. oniCount)
-    summer:Set("Summer Token Count: " .. summerCount)
+    oni:SetDesc("Oni Token Count: " .. oniCount)
+    summer:SetDesc("Summer Token Count: " .. summerCount)
 end
 
 -- Gọi 1 lần khi load
@@ -123,7 +126,7 @@ end)
 
 ----------------------------------------------------------------
 -- Tab Farm
-I1:AddButton({
+Tabs.Farm:AddButton({
     Name = "Teleport",
     Callback = function()
         -- Teleport đến tọa độ
@@ -147,7 +150,7 @@ I1:AddButton({
 
 _G.FarmEnabled = false
 
-I1:AddToggle({
+Tabs.Farm:AddToggle({
     Name = "Auto Farm Oni Soldier",
     Callback = function(state)
         _G.FarmEnabled = state
@@ -308,7 +311,5 @@ task.spawn(function()
         end
     end
 end)
-
-
 
 

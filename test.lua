@@ -43,6 +43,34 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Fluent_ToggleUI"
+ScreenGui.Parent = game.CoreGui
+
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Parent = ScreenGui
+ToggleBtn.Size = UDim2.new(0, 35, 0, 35)
+ToggleBtn.Position = UDim2.new(0, 10, 0.5, -17) -- Bên trái, giữa màn hình
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleBtn.Text = "K"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.TextSize = 20
+ToggleBtn.BorderSizePixel = 0
+
+-- Bo tròn nút
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 6)
+UICorner.Parent = ToggleBtn
+
+-- Trạng thái UI
+local uiVisible = true
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    Window:Minimize() -- ẩn/hiện Fluent UI như LeftControl
+    ToggleBtn.Text = uiVisible and "≡" or "⏷" -- đổi icon nút
+end)
+
 local Tabs = {
     Main = Window:AddTab({ Title = "Shop", Icon = "" }),
     Farm = Window:AddTab({ Title = "Farm", Icon = "" }),
@@ -311,5 +339,6 @@ task.spawn(function()
         end
     end
 end)
+
 
 

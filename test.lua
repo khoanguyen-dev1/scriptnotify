@@ -1,14 +1,19 @@
 _G.SelectWeapon = "Melee"
 
--- Load FastAttack
-loadstring(game:HttpGet("https://raw.githubusercontent.com/khoanguyen-dev1/scriptnotify/refs/heads/main/fastattack.lua"))()
+-- Load FastAttack with error handling
+pcall(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/khoanguyen-dev1/scriptnotify/refs/heads/main/fastattack.lua"))()
+end)
 
 repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
 local LocalPlayer = game.Players.LocalPlayer
 
 -- Auto chọn team Marines
 local desiredTeam = "Marines"
-game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", desiredTeam)
+pcall(function()
+    game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("SetTeam", desiredTeam)
+end)
+
 repeat
     task.wait(1)
     local chooseTeam = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ChooseTeam", true)
@@ -29,93 +34,202 @@ repeat
     end
 until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
--- Load Fluent UI with error handling
+-- Create Simple UI (Backup solution)
+local function CreateSimpleUI()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "SimpleUI"
+    ScreenGui.Parent = game.CoreGui
+    
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 400, 0, 500)
+    MainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Parent = ScreenGui
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 10)
+    UICorner.Parent = MainFrame
+    
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 0, 50)
+    Title.Position = UDim2.new(0, 0, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "Blox Fruits Script"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 18
+    Title.Font = Enum.Font.SourceSansBold
+    Title.Parent = MainFrame
+    
+    local ScrollFrame = Instance.new("ScrollingFrame")
+    ScrollFrame.Size = UDim2.new(1, -20, 1, -70)
+    ScrollFrame.Position = UDim2.new(0, 10, 0, 60)
+    ScrollFrame.BackgroundTransparency = 1
+    ScrollFrame.ScrollBarThickness = 6
+    ScrollFrame.Parent = MainFrame
+    
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 5)
+    UIListLayout.Parent = ScrollFrame
+    
+    return ScreenGui, ScrollFrame
+end
+
+-- Try to load Fluent UI, fallback to simple UI
+local Window, Tabs = nil, {}
 local success, Fluent = pcall(function()
     return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 end)
 
-if not success or not Fluent then
-    warn("Failed to load Fluent UI library!")
-    return
+if success and Fluent then
+    -- Try to create Fluent UI
+    local windowSuccess = pcall(function()
+        Window = Fluent:CreateWindow({
+            Title = "Blox Fruits Script",
+            SubTitle = "Auto Farm",
+            TabWidth = 160,
+            Size = UDim2.fromOffset(580, 460),
+            Acrylic = true,
+            Theme = "Dark",
+            MinimizeKey = Enum.KeyCode.LeftControl
+        })
+        
+        if Window then
+            Tabs.Main = Window:AddTab({ Title = "Shop", Icon = "" })
+            Tabs.Farm = Window:AddTab({ Title = "Farm", Icon = "" })
+            Tabs.Token = Window:AddTab({ Title = "Token", Icon = "" })
+        end
+    end)
+    
+    if not windowSuccess then
+        Window = nil
+    end
 end
 
--- Create Window with error handling
-local Window
-pcall(function()
-    Window = Fluent:CreateWindow({
-        Title = "Fluent " .. Fluent.Version,
-        SubTitle = "by dawid",
-        TabWidth = 160,
-        Size = UDim2.fromOffset(580, 460),
-        Acrylic = true,
-        Theme = "Dark",
-        MinimizeKey = Enum.KeyCode.LeftControl
-    })
-end)
-
+-- Use simple UI if Fluent failed
+local SimpleUI, SimpleScrollFrame = nil, nil
 if not Window then
-    warn("Failed to create Fluent window!")
-    return
+    print("Fluent UI failed, using simple UI")
+    SimpleUI, SimpleScrollFrame = CreateSimpleUI()
 end
 
--- Create tabs with error handling
-local Tabs = {}
-pcall(function()
-    Tabs.Main = Window:AddTab({ Title = "Shop", Icon = "" })
-    Tabs.Farm = Window:AddTab({ Title = "Farm", Icon = "" })
-    Tabs.Token = Window:AddTab({ Title = "Token", Icon = "" })
-end)
-
-if not Tabs.Main or not Tabs.Farm or not Tabs.Token then
-    warn("Failed to create one or more tabs!")
-    return
+-- UI Helper Functions
+local function CreateSimpleButton(text, callback)
+    if not SimpleScrollFrame then return end
+    
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, 0, 0, 35)
+    Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.Text = text
+    Button.TextSize = 14
+    Button.Font = Enum.Font.SourceSans
+    Button.Parent = SimpleScrollFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = Button
+    
+    Button.MouseButton1Click:Connect(callback)
+    
+    -- Update scroll frame size
+    SimpleScrollFrame.CanvasSize = UDim2.new(0, 0, 0, #SimpleScrollFrame:GetChildren() * 40)
 end
 
---// Nút toggle UI ngoài màn hình (giống LeftControl)
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "Fluent_ToggleUI"
-ScreenGui.Parent = game.CoreGui
+local function CreateSimpleToggle(text, callback)
+    if not SimpleScrollFrame then return end
+    
+    local ToggleFrame = Instance.new("Frame")
+    ToggleFrame.Size = UDim2.new(1, 0, 0, 35)
+    ToggleFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    ToggleFrame.Parent = SimpleScrollFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = ToggleFrame
+    
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(0.7, 0, 1, 0)
+    Label.Position = UDim2.new(0, 10, 0, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = text
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.TextSize = 14
+    Label.Font = Enum.Font.SourceSans
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = ToggleFrame
+    
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Size = UDim2.new(0, 60, 0, 25)
+    ToggleButton.Position = UDim2.new(1, -70, 0.5, -12)
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    ToggleButton.Text = "OFF"
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextSize = 12
+    ToggleButton.Font = Enum.Font.SourceSansBold
+    ToggleButton.Parent = ToggleFrame
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(0, 12)
+    toggleCorner.Parent = ToggleButton
+    
+    local isToggled = false
+    ToggleButton.MouseButton1Click:Connect(function()
+        isToggled = not isToggled
+        if isToggled then
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+            ToggleButton.Text = "ON"
+        else
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+            ToggleButton.Text = "OFF"
+        end
+        callback(isToggled)
+    end)
+    
+    -- Update scroll frame size
+    SimpleScrollFrame.CanvasSize = UDim2.new(0, 0, 0, #SimpleScrollFrame:GetChildren() * 40)
+end
 
+-- Toggle UI Button
 local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Parent = ScreenGui
 ToggleBtn.Size = UDim2.new(0, 35, 0, 35)
-ToggleBtn.Position = UDim2.new(0, 10, 0.5, -17) -- Bên trái, giữa màn hình
+ToggleBtn.Position = UDim2.new(0, 10, 0.5, -17)
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 ToggleBtn.Text = "≡"
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleBtn.TextSize = 20
 ToggleBtn.BorderSizePixel = 0
+ToggleBtn.Parent = game.CoreGui
 
--- Bo tròn nút
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 6)
 UICorner.Parent = ToggleBtn
 
--- Trạng thái UI
 local uiVisible = true
-
 ToggleBtn.MouseButton1Click:Connect(function()
     uiVisible = not uiVisible
-    if Window and Window.Minimize then
-        Window:Minimize() -- ẩn/hiện Fluent UI như LeftControl
+    if Window then
+        pcall(function() Window:Minimize() end)
+    elseif SimpleUI then
+        SimpleUI.Enabled = uiVisible
     end
-    ToggleBtn.Text = uiVisible and "≡" or "⏷" -- đổi icon nút
+    ToggleBtn.Text = uiVisible and "≡" or "⏷"
 end)
 
-local Options = Fluent.Options
-
+-- Core Functions
 local function BuyCousin(item)
-    local args = {
-        [1] = "Cousin",
-        [2] = item
-    }
-    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args))
+    pcall(function()
+        local args = { [1] = "Cousin", [2] = item }
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args))
+    end)
 end
 
--- Add buttons with error handling
+-- Add UI Elements
 if Tabs.Main then
+    -- Fluent UI
     Tabs.Main:AddButton({
-        Title ="Gacha Summer Token",
+        Title = "Gacha Summer Token",
         Description = "Summer Token",
         Callback = function() BuyCousin("BuySummer") end
     })
@@ -125,199 +239,243 @@ if Tabs.Main then
         Callback = function() BuyCousin("Buy") end
     })
     Tabs.Main:AddButton({
-        Title ="Gacha Oni Token",
+        Title = "Gacha Oni Token",
         Description = "Oni Token",
         Callback = function() BuyCousin("BuyRedHead") end
     })
-    Tabs.Main:AddButton({
-        Title ="Buy Basic bait",
-        Description = "Craft Basic bait",
-        Callback = function() 
-            local args = {
-                [1] = "Craft",
-                [2] = "Basic Bait",
-                [3] = {}
-            }
+else
+    -- Simple UI
+    CreateSimpleButton("Gacha Summer Token", function() BuyCousin("BuySummer") end)
+    CreateSimpleButton("Gacha Fruit", function() BuyCousin("Buy") end)
+    CreateSimpleButton("Gacha Oni Token", function() BuyCousin("BuyRedHead") end)
+    CreateSimpleButton("Buy Basic Bait", function()
+        pcall(function()
+            local args = { [1] = "Craft", [2] = "Basic Bait", [3] = {} }
             game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack(args))
-        end
-    })
-end
-
-local oni, summer
-if Tabs.Token then
-    oni = Tabs.Token:AddParagraph({
-        Title = "Oni Token",
-        Content = "Đang tải..."
-    })
-
-    summer = Tabs.Token:AddParagraph({
-        Title = "Summer Token",
-        Content = "Đang tải..."
-    })
-end
-
--- Hàm cập nhật số lượng token
-local function UpdateTokens()
-    if not oni or not summer then return end
-    
-    pcall(function()
-        local args = { [1] = "getInventory" }
-        local inventory = game:GetService("ReplicatedStorage")
-            :WaitForChild("Remotes")
-            :WaitForChild("CommF_")
-            :InvokeServer(unpack(args))
-
-        local oniCount, summerCount = 0, 0
-
-        for _, item in pairs(inventory) do
-            if item.Name == "Oni Token" then
-                oniCount = item.Count
-            elseif item.Name == "Summer Token" then
-                summerCount = item.Count
-            end
-        end
-
-        oni:SetDesc("Oni Token Count: " .. oniCount)
-        summer:SetDesc("Summer Token Count: " .. summerCount)
+        end)
     end)
 end
 
--- Gọi 1 lần khi load
-UpdateTokens()
+-- Token Display (Simple version)
+if not Tabs.Token then
+    -- Create simple token display
+    if SimpleScrollFrame then
+        local TokenFrame = Instance.new("Frame")
+        TokenFrame.Size = UDim2.new(1, 0, 0, 60)
+        TokenFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        TokenFrame.Parent = SimpleScrollFrame
+        
+        local tokenCorner = Instance.new("UICorner")
+        tokenCorner.CornerRadius = UDim.new(0, 5)
+        tokenCorner.Parent = TokenFrame
+        
+        local OniLabel = Instance.new("TextLabel")
+        OniLabel.Size = UDim2.new(1, -20, 0.5, 0)
+        OniLabel.Position = UDim2.new(0, 10, 0, 5)
+        OniLabel.BackgroundTransparency = 1
+        OniLabel.Text = "Oni Token: Loading..."
+        OniLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        OniLabel.TextSize = 14
+        OniLabel.Font = Enum.Font.SourceSans
+        OniLabel.TextXAlignment = Enum.TextXAlignment.Left
+        OniLabel.Parent = TokenFrame
+        
+        local SummerLabel = Instance.new("TextLabel")
+        SummerLabel.Size = UDim2.new(1, -20, 0.5, 0)
+        SummerLabel.Position = UDim2.new(0, 10, 0.5, 0)
+        SummerLabel.BackgroundTransparency = 1
+        SummerLabel.Text = "Summer Token: Loading..."
+        SummerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        SummerLabel.TextSize = 14
+        SummerLabel.Font = Enum.Font.SourceSans
+        SummerLabel.TextXAlignment = Enum.TextXAlignment.Left
+        SummerLabel.Parent = TokenFrame
+        
+        -- Update tokens function
+        local function UpdateTokens()
+            pcall(function()
+                local args = { [1] = "getInventory" }
+                local inventory = game:GetService("ReplicatedStorage")
+                    :WaitForChild("Remotes")
+                    :WaitForChild("CommF_")
+                    :InvokeServer(unpack(args))
 
--- Nếu muốn tự động refresh
-task.spawn(function()
-    while task.wait(5) do -- Changed from 0.1 to 5 seconds to reduce spam
+                local oniCount, summerCount = 0, 0
+                if inventory then
+                    for _, item in pairs(inventory) do
+                        if item.Name == "Oni Token" then
+                            oniCount = item.Count
+                        elseif item.Name == "Summer Token" then
+                            summerCount = item.Count
+                        end
+                    end
+                end
+
+                OniLabel.Text = "Oni Token: " .. oniCount
+                SummerLabel.Text = "Summer Token: " .. summerCount
+            end)
+        end
+
         UpdateTokens()
+        task.spawn(function()
+            while task.wait(5) do
+                UpdateTokens()
+            end
+        end)
     end
-end)
-
-local TweenService = game:GetService("TweenService")
-local function topos(Pos)
-    local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not HRP then return end
-    local rawPosition = typeof(Pos) == "Vector3" and Pos or (Pos.Position or Pos.p)
-    local targetPosition = rawPosition + Vector3.new(0, 10, 0)
-    local Distance = (targetPosition - HRP.Position).Magnitude
-    local Speed = 300
-    local tweenInfo = TweenInfo.new(Distance / Speed, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(HRP, tweenInfo, {CFrame = CFrame.new(targetPosition)})
-    tween:Play()
-    tween.Completed:Wait()
 end
 
+-- Teleport and Farm Functions
+local TweenService = game:GetService("TweenService")
+local function topos(Pos)
+    pcall(function()
+        local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not HRP then return end
+        local rawPosition = typeof(Pos) == "Vector3" and Pos or (Pos.Position or Pos.p)
+        local targetPosition = rawPosition + Vector3.new(0, 10, 0)
+        local Distance = (targetPosition - HRP.Position).Magnitude
+        local Speed = 300
+        local tweenInfo = TweenInfo.new(Distance / Speed, Enum.EasingStyle.Linear)
+        local tween = TweenService:Create(HRP, tweenInfo, {CFrame = CFrame.new(targetPosition)})
+        tween:Play()
+        tween.Completed:Wait()
+    end)
+end
+
+-- Add teleport button
 if Tabs.Farm then
     Tabs.Farm:AddButton({
-        Title = "Teleport",
-        Description = "Teleport to Oni Claim",
+        Title = "Teleport to Oni Claim",
+        Description = "Teleport",
         Callback = function()
-            -- Teleport đến tọa độ
             topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))
-
-            -- Đợi chút cho chắc chắn đã đến nơi
             task.wait(0.1)
-
-            -- Gọi server teleport
-            local args = {
-                [1] = "InitiateTeleportToTemple"
-            }
-
+            pcall(function()
+                local args = { [1] = "InitiateTeleportToTemple" }
+                game:GetService("ReplicatedStorage")
+                    :WaitForChild("Modules")
+                    :WaitForChild("Net")
+                    :WaitForChild("RF/OniTempleTransportation")
+                    :InvokeServer(unpack(args))
+            end)
+        end
+    })
+else
+    CreateSimpleButton("Teleport to Oni Claim", function()
+        topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))
+        task.wait(0.1)
+        pcall(function()
+            local args = { [1] = "InitiateTeleportToTemple" }
             game:GetService("ReplicatedStorage")
                 :WaitForChild("Modules")
                 :WaitForChild("Net")
                 :WaitForChild("RF/OniTempleTransportation")
                 :InvokeServer(unpack(args))
-        end
-    })
+        end)
+    end)
 end
 
+-- Farm Variables
 _G.FarmEnabled = false
 
-local Toggle
+-- Add farm toggle
 if Tabs.Farm then
-    Toggle = Tabs.Farm:AddToggle({
+    local Toggle = Tabs.Farm:AddToggle({
         Title = "Auto Farm Oni Soldier",
         Default = false
     })
-
     Toggle:OnChanged(function(Value)
         _G.FarmEnabled = Value
-    end)  
+    end)
+else
+    CreateSimpleToggle("Auto Farm Oni Soldier", function(Value)
+        _G.FarmEnabled = Value
+    end)
 end
 
--- Hàm bật Haki
+-- Auto Haki Function
 local function AutoHaki()
-    if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("HasBuso") then
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
-    end
+    pcall(function()
+        if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("HasBuso") then
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
+        end
+    end)
 end
 
--- Danh sách melee
+-- Melee Functions
 local meleeList = {
     "Combat","Black Leg","Electro","Fishman Karate","Dragon Claw",
     "Superhuman","Death Step","Sharkman Karate","Electric Claw",
     "Dragon Talon","Godhuman","Sanguine Art"
 }
+
 local function isMeleeWeapon(toolName)
     for _, name in ipairs(meleeList) do
         if toolName == name then return true end
     end
     return false
 end
+
 local function EquipWeapon(ToolSe)
-    if not ToolSe then return end
-    if not isMeleeWeapon(ToolSe) then return end
-    local backpack = LocalPlayer.Backpack
-    local tool = backpack:FindFirstChild(ToolSe)
-    if tool and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid:EquipTool(tool)
-    end
+    pcall(function()
+        if not ToolSe or not isMeleeWeapon(ToolSe) then return end
+        local backpack = LocalPlayer.Backpack
+        local tool = backpack:FindFirstChild(ToolSe)
+        if tool and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid:EquipTool(tool)
+        end
+    end)
 end
 
 -- Auto Equip
 task.spawn(function()
     while task.wait(0.5) do
-        if _G.SelectWeapon == "Melee" and _G.FarmEnabled then
-            for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
-                if tool:IsA("Tool") and isMeleeWeapon(tool.Name) then
-                    EquipWeapon(tool.Name)
-                    break
+        pcall(function()
+            if _G.SelectWeapon == "Melee" and _G.FarmEnabled then
+                for _, tool in ipairs(LocalPlayer.Backpack:GetChildren()) do
+                    if tool:IsA("Tool") and isMeleeWeapon(tool.Name) then
+                        EquipWeapon(tool.Name)
+                        break
+                    end
                 end
             end
-        end
+        end)
     end
 end)
 
--- Tên NPC farm
+-- Mob Functions
 local npcName = "Oni Soldier"
 
--- Lấy mob
 local function GetAllMobs()
     local mobs = {}
-    for _, mob in pairs(workspace.Enemies:GetChildren()) do
-        if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-            if mob:FindFirstChild("HumanoidRootPart") and string.find(mob.Name, npcName) then
-                table.insert(mobs, mob)
+    pcall(function()
+        for _, mob in pairs(workspace.Enemies:GetChildren()) do
+            if mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                if mob:FindFirstChild("HumanoidRootPart") and string.find(mob.Name, npcName) then
+                    table.insert(mobs, mob)
+                end
             end
         end
-    end
+    end)
     return mobs
 end
 
 local function FindNearestMob()
     local closest, dist = nil, math.huge
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil end
-    for _, mob in pairs(GetAllMobs()) do
-        local mag = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-        if mag < dist then
-            closest, dist = mob, mag
+    pcall(function()
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        for _, mob in pairs(GetAllMobs()) do
+            local mag = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+            if mag < dist then
+                closest, dist = mob, mag
+            end
         end
-    end
+    end)
     return closest
 end
 
--- Farm loop
+-- Main Farm Loop
 local RestPosition = Vector3.new(-5501.65625, -4166.60205078125, 4013.425048828125)
 task.spawn(function()
     local platform = Instance.new("Part")
@@ -336,7 +494,6 @@ task.spawn(function()
                 return
             end
 
-            -- Check if player exists and is loaded
             if not LocalPlayer.Character then return end
             
             AutoHaki()
@@ -354,26 +511,19 @@ task.spawn(function()
                     local mobHRP = target.HumanoidRootPart
                     local mobHumanoid = target.Humanoid
                     
-                    -- Check if mob is still alive
                     if mobHumanoid.Health <= 0 then return end
 
-                    -- Di chuyển tới mob
-                    pcall(function() topos(mobHRP.Position) end)
+                    topos(mobHRP.Position)
 
-                    -- Giữ mob đứng yên
                     pcall(function() 
-                        if mobHRP then
-                            mobHRP.Anchored = true 
-                        end
+                        if mobHRP then mobHRP.Anchored = true end
                     end)
 
-                    -- Platform di chuyển theo mob
                     pcall(function()
                         platform.Transparency = 1
                         platform.CFrame = mobHRP.CFrame * CFrame.new(0, 7, 0)
                     end)
 
-                    -- Anchor người chơi trên platform
                     pcall(function()
                         if hrp then
                             hrp.Anchored = true
@@ -381,36 +531,28 @@ task.spawn(function()
                         end
                     end)
 
-                    -- Đợi mob chết với timeout
                     local timeout = 0
                     repeat 
                         task.wait(0.2)
                         timeout = timeout + 0.2
-                        if timeout > 30 then break end -- 30 second timeout
+                        if timeout > 30 then break end
                     until not target.Parent or not target:FindFirstChild("Humanoid") or target.Humanoid.Health <= 0
 
-                    -- Bỏ anchor mob và người chơi
                     pcall(function() 
-                        if mobHRP and mobHRP.Parent then 
-                            mobHRP.Anchored = false 
-                        end
+                        if mobHRP and mobHRP.Parent then mobHRP.Anchored = false end
                     end)
                     pcall(function() 
-                        if hrp and hrp.Parent then 
-                            hrp.Anchored = false 
-                        end
+                        if hrp and hrp.Parent then hrp.Anchored = false end
                     end)
                 end
             else
-                -- Không còn mob -> bay về RestPosition
                 if hrp then
                     local distance = (hrp.Position - RestPosition).Magnitude
                     if distance > 1 then
                         pcall(function() hrp.Anchored = false end)
-                        pcall(function() topos(RestPosition) end)
+                        topos(RestPosition)
                         platform.Transparency = 1
                     else
-                        -- Đã tới RestPosition -> dừng platform, người chơi tự do
                         platform.Transparency = 1
                         pcall(function() hrp.Anchored = false end)
                     end
@@ -419,3 +561,5 @@ task.spawn(function()
         end)
     end
 end)
+
+print("Script loaded successfully!")

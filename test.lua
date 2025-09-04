@@ -212,23 +212,24 @@ if Tabs.Farm then
         Description = "Teleport to Oni Claim",
         Callback = function()
             -- Teleport đến tọa độ
-        topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))
+            topos(Vector3.new(-689.4837646484375, 15.393343925476074, 1582.8719482421875))
 
-        -- Đợi chút cho chắc chắn đã đến nơi
-        task.wait(0.1)
+            -- Đợi chút cho chắc chắn đã đến nơi
+            task.wait(0.1)
 
-        -- Gọi server teleport
-        local args = {
-            [1] = "InitiateTeleportToTemple"
-        }
+            -- Gọi server teleport
+            local args = {
+                [1] = "InitiateTeleportToTemple"
+            }
 
-        game:GetService("ReplicatedStorage")
-            :WaitForChild("Modules")
-            :WaitForChild("Net")
-            :WaitForChild("RF/OniTempleTransportation")
-            :InvokeServer(unpack(args))
-    end
-})
+            game:GetService("ReplicatedStorage")
+                :WaitForChild("Modules")
+                :WaitForChild("Net")
+                :WaitForChild("RF/OniTempleTransportation")
+                :InvokeServer(unpack(args))
+        end
+    })
+end
 
 _G.FarmEnabled = false
 
@@ -329,58 +330,92 @@ task.spawn(function()
     platform.Parent = workspace
 
     while task.wait(0.2) do
-        if not _G.FarmEnabled then
-            platform.Transparency = 1
-            continue
-        end
-
-        AutoHaki()
-        local character = LocalPlayer.Character
-        local hrp = character and character:FindFirstChild("HumanoidRootPart")
-        local humanoid = character and character:FindFirstChild("Humanoid")
-        local mobs = GetAllMobs()
-
-        if #mobs > 0 and hrp and humanoid then
-            local target = FindNearestMob()
-            if target and target:FindFirstChild("HumanoidRootPart") then
-                local mobHRP = target.HumanoidRootPart
-
-                -- Di chuyển tới mob
-                topos(mobHRP.Position)
-
-                -- Giữ mob đứng yên
-                pcall(function() mobHRP.Anchored = true end)
-
-                -- Platform di chuyển theo mob
+        pcall(function()
+            if not _G.FarmEnabled then
                 platform.Transparency = 1
-                platform.CFrame = mobHRP.CFrame * CFrame.new(0, 7, 0)
-
-                -- Anchor người chơi trên platform -> không thể di chuyển
-                hrp.Anchored = true
-                hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
-
-                -- Đợi mob chết
-                repeat task.wait(0.2) until not target.Parent or target.Humanoid.Health <= 0
-
-                -- Bỏ anchor mob và người chơi
-                if mobHRP then mobHRP.Anchored = false end
-                hrp.Anchored = false
+                return
             end
-        else
-            -- Không còn mob -> bay về RestPosition
-            if hrp then
-                local distance = (hrp.Position - RestPosition).Magnitude
-                if distance > 1 then
-                    hrp.Anchored = false -- Cho phép player tự di chuyển về RestPosition
-                    topos(RestPosition)
-                    platform.Transparency = 1
-                else
-                    -- Đã tới RestPosition -> dừng platform, người chơi tự do
-                    platform.Transparency = 1
-                    hrp.Anchored = false
+
+            -- Check if player exists and is loaded
+            if not LocalPlayer.Character then return end
+            
+            AutoHaki()
+            local character = LocalPlayer.Character
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            local humanoid = character:FindFirstChild("Humanoid")
+            
+            if not hrp or not humanoid then return end
+            
+            local mobs = GetAllMobs()
+
+            if #mobs > 0 then
+                local target = FindNearestMob()
+                if target and target.Parent and target:FindFirstChild("HumanoidRootPart") and target:FindFirstChild("Humanoid") then
+                    local mobHRP = target.HumanoidRootPart
+                    local mobHumanoid = target.Humanoid
+                    
+                    -- Check if mob is still alive
+                    if mobHumanoid.Health <= 0 then return end
+
+                    -- Di chuyển tới mob
+                    pcall(function() topos(mobHRP.Position) end)
+
+                    -- Giữ mob đứng yên
+                    pcall(function() 
+                        if mobHRP then
+                            mobHRP.Anchored = true 
+                        end
+                    end)
+
+                    -- Platform di chuyển theo mob
+                    pcall(function()
+                        platform.Transparency = 1
+                        platform.CFrame = mobHRP.CFrame * CFrame.new(0, 7, 0)
+                    end)
+
+                    -- Anchor người chơi trên platform
+                    pcall(function()
+                        if hrp then
+                            hrp.Anchored = true
+                            hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
+                        end
+                    end)
+
+                    -- Đợi mob chết với timeout
+                    local timeout = 0
+                    repeat 
+                        task.wait(0.2)
+                        timeout = timeout + 0.2
+                        if timeout > 30 then break end -- 30 second timeout
+                    until not target.Parent or not target:FindFirstChild("Humanoid") or target.Humanoid.Health <= 0
+
+                    -- Bỏ anchor mob và người chơi
+                    pcall(function() 
+                        if mobHRP and mobHRP.Parent then 
+                            mobHRP.Anchored = false 
+                        end
+                    end)
+                    pcall(function() 
+                        if hrp and hrp.Parent then 
+                            hrp.Anchored = false 
+                        end
+                    end)
+                end
+            else
+                -- Không còn mob -> bay về RestPosition
+                if hrp then
+                    local distance = (hrp.Position - RestPosition).Magnitude
+                    if distance > 1 then
+                        pcall(function() hrp.Anchored = false end)
+                        pcall(function() topos(RestPosition) end)
+                        platform.Transparency = 1
+                    else
+                        -- Đã tới RestPosition -> dừng platform, người chơi tự do
+                        platform.Transparency = 1
+                        pcall(function() hrp.Anchored = false end)
+                    end
                 end
             end
-        end
+        end)
     end
 end)
-

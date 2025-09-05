@@ -291,12 +291,10 @@ task.spawn(function()
 end)
 
 -- Mob Functions
-_G.BringAllMob = true
-_G.BringRange = 50 -- Phạm vi phát hiện quái
-local npcName = "Oni Soldier" -- Tên quái
-local RestPosition = Vector3.new(-5501.65625, -4166.60205078125, 4013.425048828125)
+local npcName = "Oni Soldier"
+local GROUP_RANGE = 50 -- khoảng cách để gộp mob lại thành 1 nhóm
+local returnedToRest = false -- trạng thái đã quay về vị trí nghỉ chưa
 
--- Lấy tất cả Oni Soldier
 local function GetAllMobs()
     local mobs = {}
     pcall(function()
@@ -312,8 +310,38 @@ local function GetAllMobs()
     return mobs
 end
 
+local function GetMobGroup()
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return {} end
+
+    local mobs = GetAllMobs()
+    if #mobs == 0 then return {} end
+
+    -- tìm con mob gần nhất trước
+    local closest, dist = nil, math.huge
+    for _, mob in pairs(mobs) do
+        local mag = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+        if mag < dist then
+            closest, dist = mob, mag
+        end
+    end
+    if not closest then return {} end
+
+    -- gom nhóm mob gần con closest
+    local group = {}
+    for _, mob in pairs(mobs) do
+        if mob:FindFirstChild("HumanoidRootPart") then
+            local mag = (mob.HumanoidRootPart.Position - closest.HumanoidRootPart.Position).Magnitude
+            if mag <= GROUP_RANGE then
+                table.insert(group, mob)
+            end
+        end
+    end
+    return group
+end
+
 -- Main Farm Loop
-local returnedToRest = false
+local RestPosition = Vector3.new(-5501.65625, -4166.60205078125, 4013.425048828125)
 task.spawn(function()
     local platform = Instance.new("Part")
     platform.Size = Vector3.new(6, 1, 6)
@@ -328,75 +356,70 @@ task.spawn(function()
         pcall(function()
             if not _G.FarmEnabled then
                 platform.Transparency = 1
-                continue
+                return
             end
 
-            local player = game.Players.LocalPlayer
-            local char = player.Character
-            if not char then continue end
+            if not LocalPlayer.Character then return end
 
             AutoHaki()
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            local humanoid = char:FindFirstChild("Humanoid")
-            if not hrp or not humanoid then continue end
+            local character = LocalPlayer.Character
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            local humanoid = character:FindFirstChild("Humanoid")
+            if not hrp or not humanoid then return end
 
-            local mobs = GetAllMobs()
-            if #mobs > 0 then
-                returnedToRest = false
-                local mainMob = mobs[1]
-                local mobHRP = mainMob and mainMob:FindFirstChild("HumanoidRootPart")
-                if not mobHRP then continue end
+            local group = GetMobGroup()
 
-                -- Move tới mob đầu tiên
-                topos(mobHRP.Position)
+            if #group > 0 then
+                returnedToRest = false -- reset trạng thái vì đang đánh quái
+                local mainMob = group[1]
+                if mainMob and mainMob.Parent and mainMob:FindFirstChild("HumanoidRootPart") then
+                    local mobHRP = mainMob.HumanoidRootPart
 
-                -- Đặt platform ngay trên mob
-                platform.Transparency = 0
-                platform.CFrame = mobHRP.CFrame * CFrame.new(0, 7, 0)
+                    topos(mobHRP.Position)
 
-                -- Đặt player trên platform
-                hrp.Anchored = true
-                hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
+                    -- đặt platform trên mob
+                    platform.Transparency = 0
+                    platform.CFrame = mobHRP.CFrame * CFrame.new(0, 7, 0)
 
-                -- Bring tất cả Oni Soldier về dưới platform
-                if _G.BringAllMob then
-                    for _, mob in pairs(mobs) do
+                    -- đặt player trên platform
+                    hrp.Anchored = true
+                    hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
+
+                    -- Bring toàn bộ mob trong nhóm xuống dưới platform
+                    for _, mob in pairs(group) do
                         local mh = mob:FindFirstChild("Humanoid")
                         local mhrp = mob:FindFirstChild("HumanoidRootPart")
                         if mh and mh.Health > 0 and mhrp then
-                            local dist = (mhrp.Position - hrp.Position).Magnitude
-                            if dist <= _G.BringRange then
-                                mhrp.Size = Vector3.new(50, 50, 50)
-                                mhrp.CFrame = platform.CFrame * CFrame.new(0, -3, 0)
-                                mh:ChangeState(14)
-                                mhrp.CanCollide = false
-                                if mob:FindFirstChild("Head") then mob.Head.CanCollide = false end
-                                if mh:FindFirstChild("Animator") then mh.Animator:Destroy() end
-                                sethiddenproperty(player, "SimulationRadius", math.huge)
+                            mhrp.CanCollide = false
+                            if mob:FindFirstChild("Head") then mob.Head.CanCollide = false end
+                            if mh:FindFirstChild("Animator") then mh.Animator:Destroy() end
+                            mhrp.Size = Vector3.new(50,50,50)
+                            mhrp.CFrame = platform.CFrame * CFrame.new(0, -3, 0) -- đưa mob xuống dưới platform
+                            mh:ChangeState(14)
+                            sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius", math.huge)
+                        end
+                    end
+
+                    -- đợi cho đến khi cả nhóm chết hoặc hết timeout
+                    local timeout = 0
+                    repeat 
+                        task.wait(0.2)
+                        timeout = timeout + 0.2
+                        local alive = false
+                        for _, mob in pairs(group) do
+                            if mob.Parent and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                                alive = true
+                                break
                             end
                         end
-                    end
+                        if not alive then break end
+                    until timeout > 30
+
+                    -- reset trạng thái sau khi xong
+                    if hrp and hrp.Parent then hrp.Anchored = false end
                 end
-
-                -- Đợi mob chết hoặc timeout
-                local timeout = 0
-                repeat
-                    task.wait(0.2)
-                    timeout += 0.2
-                    local alive = false
-                    for _, mob in pairs(mobs) do
-                        if mob.Parent and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-                            alive = true
-                            break
-                        end
-                    end
-                    if not alive then break end
-                until timeout > 30
-
-                -- Thả player ra sau khi xong
-                if hrp and hrp.Parent then hrp.Anchored = false end
             else
-                -- Không còn mob → quay về RestPosition 1 lần
+                -- chỉ quay về RestPosition 1 lần
                 if not returnedToRest then
                     returnedToRest = true
                     if hrp then
@@ -413,6 +436,7 @@ end)
 
 
 print("Script loaded successfully!")
+
 
 
 

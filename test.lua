@@ -291,7 +291,6 @@ task.spawn(function()
 end)
 
 -- Mob Functions
-_G.BringAllMob = true
 _G.BringRange = 50 -- Phạm vi phát hiện quái
 local npcName = "Oni Soldier" -- Tên quái
 local RestPosition = Vector3.new(-5501.65625, -4166.60205078125, 4013.425048828125)
@@ -358,20 +357,20 @@ task.spawn(function()
                 hrp.Anchored = true
                 hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
 
-                -- Bring tất cả Oni Soldier về dưới platform
-                if _G.BringAllMob then
-                    for _, mob in pairs(mobs) do
-                        local mh = mob:FindFirstChild("Humanoid")
-                        local mhrp = mob:FindFirstChild("HumanoidRootPart")
-                        if mh and mh.Health > 0 and mhrp then
-                            local dist = (mhrp.Position - hrp.Position).Magnitude
-                            if dist <= _G.BringRange then
-                                mhrp.Size = Vector3.new(50, 50, 50)
-                                mhrp.CFrame = platform.CFrame * CFrame.new(0, -3, 0)
-                                mh:ChangeState(14)
-                                mhrp.CanCollide = false
-                                if mob:FindFirstChild("Head") then mob.Head.CanCollide = false end
-                                if mh:FindFirstChild("Animator") then mh.Animator:Destroy() end
+                -- Bring tất cả Oni Soldier về dưới platform (luôn luôn)
+                for _, mob in pairs(mobs) do
+                    local mh = mob:FindFirstChild("Humanoid")
+                    local mhrp = mob:FindFirstChild("HumanoidRootPart")
+                    if mh and mh.Health > 0 and mhrp then
+                        local dist = (mhrp.Position - hrp.Position).Magnitude
+                        if dist <= _G.BringRange then
+                            mhrp.Size = Vector3.new(50, 50, 50)
+                            mhrp.CFrame = platform.CFrame * CFrame.new(0, -3, 0)
+                            mh:ChangeState(14)
+                            mhrp.CanCollide = false
+                            if mob:FindFirstChild("Head") then mob.Head.CanCollide = false end
+                            if mh:FindFirstChild("Animator") then mh.Animator:Destroy() end
+                            if sethiddenproperty then
                                 sethiddenproperty(player, "SimulationRadius", math.huge)
                             end
                         end
@@ -411,8 +410,8 @@ task.spawn(function()
     end
 end)
 
-
 print("Script loaded successfully!")
+
 
 
 

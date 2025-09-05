@@ -291,7 +291,6 @@ task.spawn(function()
 end)
 
 -- Mob Functions
--- Mob Functions
 local npcName = "Oni Soldier"
 local GROUP_RANGE = 50 -- khoảng cách để gộp mob lại thành 1 nhóm
 local returnedToRest = false -- trạng thái đã quay về vị trí nghỉ chưa
@@ -434,5 +433,6 @@ end)
 
 
 print("Script loaded successfully!")
+
 
 

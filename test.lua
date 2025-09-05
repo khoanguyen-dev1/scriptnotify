@@ -1,4 +1,4 @@
-_G.SelectWeapon == "Melee"
+_G.SelectWeapon = "Melee"
 
 -- Load FastAttack with error handling
 pcall(function()
@@ -34,70 +34,104 @@ repeat
     end
 until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
--- Try to load Fluent UI, fallback to simple UI
-local Window, Tabs = nil, {}
-local success, Fluent = pcall(function()
-    return loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-end)
-
-if success and Fluent then
-    -- Try to create Fluent UI
-    local windowSuccess = pcall(function()
-        Window = Fluent:CreateWindow({
-            Title = "Blox Fruits Script",
-            SubTitle = "Auto Farm",
-            TabWidth = 160,
-            Size = UDim2.fromOffset(580, 460),
-            Acrylic = true,
-            Theme = "Dark",
-            MinimizeKey = Enum.KeyCode.LeftControl
-        })
-        
-        if Window then
-            Tabs.Main = Window:AddTab({ Title = "Shop", Icon = "" })
-            Tabs.Farm = Window:AddTab({ Title = "Farm", Icon = "" })
-            Tabs.Token = Window:AddTab({ Title = "Token", Icon = "" })
-        end
-    end)
-    
-    if not windowSuccess then
-        Window = nil
-    end
-end
-
--- Tạo nút nhỏ ON/OFF
+-- Tạo Simple UI thay vì Fluent
 local ScreenGui = Instance.new("ScreenGui")
-local ImageButton = Instance.new("ImageButton")
+local MainFrame = Instance.new("Frame")
 local UICorner = Instance.new("UICorner")
+local TitleLabel = Instance.new("TextLabel")
+local FarmToggle = Instance.new("TextButton")
+local StatusLabel = Instance.new("TextLabel")
+local TeleportButton = Instance.new("TextButton")
+local MinimizeButton = Instance.new("TextButton")
 
+-- Setup ScreenGui
+ScreenGui.Name = "BloxFruitsScript"
 ScreenGui.Parent = game.CoreGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-ImageButton.Parent = ScreenGui
-ImageButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- đỏ = Off
-ImageButton.BorderSizePixel = 0
-ImageButton.Position = UDim2.new(0.12, 0, 0.1, 0)
-ImageButton.Size = UDim2.new(0, 50, 0, 50)
-ImageButton.Draggable = true
-ImageButton.AutoButtonColor = false
-ImageButton.Image = "" -- bỏ hình ảnh
+-- Setup MainFrame
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.Size = UDim2.new(0, 300, 0, 200)
+MainFrame.Active = true
+MainFrame.Draggable = true
 
 UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = ImageButton
+UICorner.Parent = MainFrame
 
--- Trạng thái
-local isOn = true -- mặc định hiển thị window
+-- Title
+TitleLabel.Name = "TitleLabel"
+TitleLabel.Parent = MainFrame
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+TitleLabel.Size = UDim2.new(1, 0, 0, 40)
+TitleLabel.Font = Enum.Font.SourceSansBold
+TitleLabel.Text = "Blox Fruits Auto Farm"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextScaled = true
 
-ImageButton.MouseButton1Click:Connect(function()
-    isOn = not isOn
-    if isOn then
-        ImageButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- xanh = On
-        Window:Minimize(false) -- hiện lại Window
-    else
-        ImageButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- đỏ = Off
-        Window:Minimize(true) -- ẩn Window
-    end
-end)
+-- Farm Toggle
+FarmToggle.Name = "FarmToggle"
+FarmToggle.Parent = MainFrame
+FarmToggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+FarmToggle.Position = UDim2.new(0.05, 0, 0.3, 0)
+FarmToggle.Size = UDim2.new(0.9, 0, 0, 35)
+FarmToggle.Font = Enum.Font.SourceSans
+FarmToggle.Text = "Farm: OFF"
+FarmToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+FarmToggle.TextScaled = true
+
+local farmCorner = Instance.new("UICorner")
+farmCorner.CornerRadius = UDim.new(0, 5)
+farmCorner.Parent = FarmToggle
+
+-- Status Label
+StatusLabel.Name = "StatusLabel"
+StatusLabel.Parent = MainFrame
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Position = UDim2.new(0.05, 0, 0.55, 0)
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
+StatusLabel.Font = Enum.Font.SourceSans
+StatusLabel.Text = "Status: Waiting..."
+StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+StatusLabel.TextScaled = true
+
+-- Teleport Button
+TeleportButton.Name = "TeleportButton"
+TeleportButton.Parent = MainFrame
+TeleportButton.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
+TeleportButton.Position = UDim2.new(0.05, 0, 0.75, 0)
+TeleportButton.Size = UDim2.new(0.9, 0, 0, 35)
+TeleportButton.Font = Enum.Font.SourceSans
+TeleportButton.Text = "Teleport to Oni"
+TeleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+TeleportButton.TextScaled = true
+
+local tpCorner = Instance.new("UICorner")
+tpCorner.CornerRadius = UDim.new(0, 5)
+tpCorner.Parent = TeleportButton
+
+-- Minimize Button
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Parent = MainFrame
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
+MinimizeButton.Position = UDim2.new(0.85, 0, 0, 5)
+MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+MinimizeButton.Font = Enum.Font.SourceSansBold
+MinimizeButton.Text = "-"
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.TextScaled = true
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 5)
+minCorner.Parent = MinimizeButton
+
+-- Farm Variables
+_G.FarmEnabled = false
+local isMinimized = false
 
 -- Core Functions
 local function BuyCousin(item)
@@ -107,87 +141,7 @@ local function BuyCousin(item)
     end)
 end
 
--- Add UI Elements
-if Tabs.Main then
-    -- Các button cho Main Tab
-    Tabs.Main:AddButton({
-        Title = "Gacha Summer Token",
-        Description = "Summer Token",
-        Callback = function() BuyCousin("BuySummer") end
-    })
-
-    Tabs.Main:AddButton({
-        Title = "Gacha Fruit",
-        Description = "Money",
-        Callback = function() BuyCousin("Buy") end
-    })
-
-    Tabs.Main:AddButton({
-        Title = "Gacha Oni Token",
-        Description = "Oni Token",
-        Callback = function() BuyCousin("BuyRedHead") end
-    })
-
-    Tabs.Main:AddButton({
-        Title = "Buy Basic bait",
-        Description = "Craft Basic Bait",
-        Callback = function()
-            local args = {
-                [1] = "Craft",
-                [2] = "Basic Bait",
-                [3] = {}
-            }
-            game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack(args))
-        end
-    })
-end
-
--- Token Display (Simple version)
-if Tabs.Token then
-    local oni = Tabs.Token:AddParagraph({
-        Title = "Oni Token",
-        Content = "Đang tải..."
-    })
-
-    local summer = Tabs.Token:AddParagraph({
-        Title = "Summer Token",
-        Content = "Đang tải..."
-    })
-
-    -- Hàm cập nhật số lượng token
-    local function UpdateTokens()
-        local args = { [1] = "getInventory" }
-        local inventory = game:GetService("ReplicatedStorage")
-            :WaitForChild("Remotes")
-            :WaitForChild("CommF_")
-            :InvokeServer(unpack(args))
-
-        local oniCount, summerCount = 0, 0
-
-        for _, item in pairs(inventory) do
-            if item.Name == "Oni Token" then
-                oniCount = item.Count
-            elseif item.Name == "Summer Token" then
-                summerCount = item.Count
-            end
-        end
-
-        oni:SetDesc("Oni Token Count: " .. oniCount)
-        summer:SetDesc("Summer Token Count: " .. summerCount)
-    end
-
-    -- Gọi 1 lần khi load
-    UpdateTokens()
-
-    -- Nếu muốn tự động refresh
-    task.spawn(function()
-        while task.wait(0.5) do -- refresh mỗi 0.5s cho nhẹ
-            UpdateTokens()
-        end
-    end)
-end
-
--- Teleport and Farm Functions
+-- Teleport Function
 local TweenService = game:GetService("TweenService")
 local function topos(Pos)
     pcall(function()
@@ -204,47 +158,45 @@ local function topos(Pos)
     end)
 end
 
--- Add teleport button
-if Tabs.Farm then
-    Tabs.Farm:AddButton({
-        Title = "Teleport to Oni Claim",
-        Description = "Teleport",
-        Callback = function()
-            topos(Vector3.new(-689.4838, 15.3933, 1582.8720))
-            task.wait(0.1)
-            local args = {
-                [1] = "InitiateTeleportToTemple"
-            }
+-- Button Events
+FarmToggle.MouseButton1Click:Connect(function()
+    _G.FarmEnabled = not _G.FarmEnabled
+    if _G.FarmEnabled then
+        FarmToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        FarmToggle.Text = "Farm: ON"
+        StatusLabel.Text = "Status: Farming..."
+    else
+        FarmToggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        FarmToggle.Text = "Farm: OFF"
+        StatusLabel.Text = "Status: Stopped"
+    end
+end)
 
-            game:GetService("ReplicatedStorage")
-                :WaitForChild("Modules")
-                :WaitForChild("Net")
-                :WaitForChild("RF/OniTempleTransportation")
-                :InvokeServer(unpack(args))
-        end
-    })
-end
-
--- Farm Variables
-_G.FarmEnabled = false
-
--- Add farm toggle
-if Window and Tabs.Farm then
-    local Toggle = Tabs.Farm:AddToggle("MyToggle", {Title = "Auto Farm Oni Soldier", Default = false })
-    Toggle:OnChanged(function(Value)
-        _G.FarmEnabled = Value
-        print("Farm Status:", _G.FarmEnabled and "ON" or "OFF")
+TeleportButton.MouseButton1Click:Connect(function()
+    StatusLabel.Text = "Status: Teleporting..."
+    topos(Vector3.new(-689.4838, 15.3933, 1582.8720))
+    task.wait(0.1)
+    pcall(function()
+        local args = { [1] = "InitiateTeleportToTemple" }
+        game:GetService("ReplicatedStorage")
+            :WaitForChild("Modules")
+            :WaitForChild("Net")
+            :WaitForChild("RF/OniTempleTransportation")
+            :InvokeServer(unpack(args))
     end)
-else
-    print("Farm toggle not available - using keyboard control")
-    -- Fallback: sử dụng phím để bật/tắt farm
-    game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-        if not gameProcessed and input.KeyCode == Enum.KeyCode.F then
-            _G.FarmEnabled = not _G.FarmEnabled
-            print("Farm Status (F key):", _G.FarmEnabled and "ON" or "OFF")
-        end
-    end)
-end
+    StatusLabel.Text = "Status: Teleported"
+end)
+
+MinimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        MainFrame.Size = UDim2.new(0, 300, 0, 40)
+        MinimizeButton.Text = "+"
+    else
+        MainFrame.Size = UDim2.new(0, 300, 0, 200)
+        MinimizeButton.Text = "-"
+    end
+end)
 
 -- Auto Haki Function
 local function AutoHaki()
@@ -297,8 +249,8 @@ task.spawn(function()
 end)
 
 -- Mob Functions
-_G.BringRange = 50 -- Phạm vi phát hiện quái
-local npcName = "Oni Soldier" -- Tên quái
+_G.BringRange = 50
+local npcName = "Oni Soldier"
 local RestPosition = Vector3.new(-5501.65625, -4166.60205078125, 4013.425048828125)
 
 -- Lấy tất cả Oni Soldier
@@ -319,10 +271,7 @@ end
 
 -- Bring Mob Function - CHỈ HOẠT ĐỘNG KHI _G.FarmEnabled = true
 local function BringMobs(mobs, platform)
-    -- KIỂM TRA ĐIỀU KIỆN: Chỉ bring khi farm được bật
-    if not _G.FarmEnabled then
-        return -- Không làm gì cả nếu farm tắt
-    end
+    if not _G.FarmEnabled then return end
     
     local player = game.Players.LocalPlayer
     local char = player.Character
@@ -338,7 +287,6 @@ local function BringMobs(mobs, platform)
             if mh and mh.Health > 0 and mhrp then
                 local dist = (mhrp.Position - hrp.Position).Magnitude
                 if dist <= _G.BringRange then
-                    -- Chỉ bring khi farm đang bật
                     mhrp.Size = Vector3.new(50, 50, 50)
                     mhrp.CFrame = platform.CFrame * CFrame.new(0, -3, 0)
                     mh:ChangeState(14)
@@ -364,8 +312,7 @@ local function ResetMobProperties()
         for _, mob in pairs(workspace.Enemies:GetChildren()) do
             if mob:FindFirstChild("HumanoidRootPart") and string.find(mob.Name, npcName) then
                 local mhrp = mob:FindFirstChild("HumanoidRootPart")
-                -- Reset size và properties về bình thường
-                mhrp.Size = Vector3.new(4, 4, 4) -- kích thước gốc
+                mhrp.Size = Vector3.new(4, 4, 4)
                 mhrp.CanCollide = true
                 if mob:FindFirstChild("Head") then 
                     mob.Head.CanCollide = true 
@@ -389,11 +336,12 @@ task.spawn(function()
 
     while task.wait(0.2) do
         pcall(function()
-            -- KIỂM TRA FARM STATUS
             if not _G.FarmEnabled then
                 platform.Transparency = 1
-                -- Reset tất cả mob properties khi tắt farm
                 ResetMobProperties()
+                if StatusLabel then
+                    StatusLabel.Text = "Status: Stopped"
+                end
                 continue
             end
 
@@ -413,21 +361,18 @@ task.spawn(function()
                 local mobHRP = mainMob and mainMob:FindFirstChild("HumanoidRootPart")
                 if not mobHRP then continue end
 
-                -- Move tới mob đầu tiên
-                topos(mobHRP.Position)
+                if StatusLabel then
+                    StatusLabel.Text = "Status: Fighting " .. #mobs .. " mobs"
+                end
 
-                -- Đặt platform ngay trên mob
+                topos(mobHRP.Position)
                 platform.Transparency = 0
                 platform.CFrame = mobHRP.CFrame * CFrame.new(0, 7, 0)
-
-                -- Đặt player trên platform
                 hrp.Anchored = true
                 hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
 
-                -- Bring tất cả Oni Soldier (chỉ khi _G.FarmEnabled = true)
                 BringMobs(mobs, platform)
 
-                -- Đợi mob chết hoặc timeout
                 local timeout = 0
                 repeat
                     task.wait(0.2)
@@ -440,25 +385,27 @@ task.spawn(function()
                         end
                     end
                     if not alive then break end
-                    
-                    -- Kiểm tra nếu farm bị tắt giữa chừng
                     if not _G.FarmEnabled then
                         ResetMobProperties()
                         break
                     end
                 until timeout > 30
 
-                -- Thả player ra sau khi xong
                 if hrp and hrp.Parent then hrp.Anchored = false end
             else
-                -- Không còn mob → quay về RestPosition 1 lần
                 if not returnedToRest then
                     returnedToRest = true
+                    if StatusLabel then
+                        StatusLabel.Text = "Status: No mobs, returning..."
+                    end
                     if hrp then
                         hrp.Anchored = false
                         topos(RestPosition)
                     end
                 else
+                    if StatusLabel then
+                        StatusLabel.Text = "Status: Waiting for mobs..."
+                    end
                     if hrp then hrp.Anchored = false end
                 end
             end
@@ -466,5 +413,40 @@ task.spawn(function()
     end
 end)
 
-print("Script loaded successfully!")
-print("Bring Mob chỉ hoạt động khi _G.FarmEnabled = true")
+-- Keyboard shortcuts
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == Enum.KeyCode.F then
+        -- Toggle farm
+        _G.FarmEnabled = not _G.FarmEnabled
+        if _G.FarmEnabled then
+            FarmToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+            FarmToggle.Text = "Farm: ON"
+            StatusLabel.Text = "Status: Farming..."
+        else
+            FarmToggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            FarmToggle.Text = "Farm: OFF"
+            StatusLabel.Text = "Status: Stopped"
+        end
+    elseif input.KeyCode == Enum.KeyCode.T then
+        -- Teleport
+        StatusLabel.Text = "Status: Teleporting..."
+        topos(Vector3.new(-689.4838, 15.3933, 1582.8720))
+        task.wait(0.1)
+        pcall(function()
+            local args = { [1] = "InitiateTeleportToTemple" }
+            game:GetService("ReplicatedStorage")
+                :WaitForChild("Modules")
+                :WaitForChild("Net")
+                :WaitForChild("RF/OniTempleTransportation")
+                :InvokeServer(unpack(args))
+        end)
+        StatusLabel.Text = "Status: Teleported"
+    end
+end)
+
+print("=== Blox Fruits Script Loaded ===")
+print("F - Toggle Farm")
+print("T - Teleport to Oni")
+print("Bring Mob chỉ hoạt động khi Farm = ON")

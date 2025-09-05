@@ -1,4 +1,4 @@
-
+_G.SelectWeapon == "Melee"
 
 -- Load FastAttack with error handling
 pcall(function()
@@ -413,6 +413,7 @@ end)
 
 
 print("Script loaded successfully!")
+
 
 
 

@@ -137,13 +137,8 @@ if Tabs.Main then
                 [2] = "Basic Bait",
                 [3] = {}
             }
-            game:GetService("ReplicatedStorage")
-                :WaitForChild("Modules")
-                :WaitForChild("Net")
-                :WaitForChild("RF")
-                :WaitForChild("Craft")
-                :InvokeServer(unpack(args))
-        end
+            game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack(args))
+ end
     })
 end
 
@@ -415,3 +410,4 @@ task.spawn(function()
 end)
 
 print("Script loaded successfully!")
+

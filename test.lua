@@ -291,7 +291,10 @@ task.spawn(function()
 end)
 
 -- Mob Functions
+-- Mob Functions
 local npcName = "Oni Soldier"
+local GROUP_RANGE = 50 -- khoảng cách để gộp mob lại thành 1 nhóm
+local returnedToRest = false -- trạng thái đã quay về vị trí nghỉ chưa
 
 local function GetAllMobs()
     local mobs = {}
@@ -307,19 +310,34 @@ local function GetAllMobs()
     return mobs
 end
 
-local function FindNearestMob()
+local function GetMobGroup()
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return {} end
+
+    local mobs = GetAllMobs()
+    if #mobs == 0 then return {} end
+
+    -- tìm con mob gần nhất trước
     local closest, dist = nil, math.huge
-    pcall(function()
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-        for _, mob in pairs(GetAllMobs()) do
-            local mag = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-            if mag < dist then
-                closest, dist = mob, mag
+    for _, mob in pairs(mobs) do
+        local mag = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
+        if mag < dist then
+            closest, dist = mob, mag
+        end
+    end
+    if not closest then return {} end
+
+    -- gom nhóm mob gần con closest
+    local group = {}
+    for _, mob in pairs(mobs) do
+        if mob:FindFirstChild("HumanoidRootPart") then
+            local mag = (mob.HumanoidRootPart.Position - closest.HumanoidRootPart.Position).Magnitude
+            if mag <= GROUP_RANGE then
+                table.insert(group, mob)
             end
         end
-    end)
-    return closest
+    end
+    return group
 end
 
 -- Main Farm Loop
@@ -342,66 +360,71 @@ task.spawn(function()
             end
 
             if not LocalPlayer.Character then return end
-            
+
             AutoHaki()
             local character = LocalPlayer.Character
             local hrp = character:FindFirstChild("HumanoidRootPart")
             local humanoid = character:FindFirstChild("Humanoid")
-            
             if not hrp or not humanoid then return end
-            
-            local mobs = GetAllMobs()
 
-            if #mobs > 0 then
-                local target = FindNearestMob()
-                if target and target.Parent and target:FindFirstChild("HumanoidRootPart") and target:FindFirstChild("Humanoid") then
-                    local mobHRP = target.HumanoidRootPart
-                    local mobHumanoid = target.Humanoid
-                    
-                    if mobHumanoid.Health <= 0 then return end
+            local group = GetMobGroup()
+
+            if #group > 0 then
+                returnedToRest = false -- reset trạng thái vì đang đánh quái
+                local mainMob = group[1]
+                if mainMob and mainMob.Parent and mainMob:FindFirstChild("HumanoidRootPart") then
+                    local mobHRP = mainMob.HumanoidRootPart
 
                     topos(mobHRP.Position)
 
-                    pcall(function() 
-                        if mobHRP then mobHRP.Anchored = true end
-                    end)
-
-                    pcall(function()
-                        platform.Transparency = 1
-                        platform.CFrame = mobHRP.CFrame * CFrame.new(0, 7, 0)
-                    end)
-
-                    pcall(function()
-                        if hrp then
-                            hrp.Anchored = true
-                            hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
+                    -- anchor tất cả mob trong nhóm
+                    for _, mob in pairs(group) do
+                        local mh = mob:FindFirstChild("Humanoid")
+                        local mhrp = mob:FindFirstChild("HumanoidRootPart")
+                        if mh and mh.Health > 0 and mhrp then
+                            mhrp.Anchored = true
                         end
-                    end)
+                    end
 
+                    platform.Transparency = 1
+                    platform.CFrame = mobHRP.CFrame * CFrame.new(0, 7, 0)
+
+                    hrp.Anchored = true
+                    hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
+
+                    -- đợi cho đến khi cả nhóm chết hoặc hết timeout
                     local timeout = 0
                     repeat 
                         task.wait(0.2)
                         timeout = timeout + 0.2
-                        if timeout > 30 then break end
-                    until not target.Parent or not target:FindFirstChild("Humanoid") or target.Humanoid.Health <= 0
+                        local alive = false
+                        for _, mob in pairs(group) do
+                            if mob.Parent and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                                alive = true
+                                break
+                            end
+                        end
+                        if not alive then break end
+                    until timeout > 30
 
-                    pcall(function() 
-                        if mobHRP and mobHRP.Parent then mobHRP.Anchored = false end
-                    end)
-                    pcall(function() 
-                        if hrp and hrp.Parent then hrp.Anchored = false end
-                    end)
+                    -- gỡ anchor sau khi chết
+                    for _, mob in pairs(group) do
+                        local mhrp = mob:FindFirstChild("HumanoidRootPart")
+                        if mhrp then mhrp.Anchored = false end
+                    end
+                    if hrp and hrp.Parent then hrp.Anchored = false end
                 end
             else
-                if hrp then
-                    local distance = (hrp.Position - RestPosition).Magnitude
-                    if distance > 1 then
-                        pcall(function() hrp.Anchored = false end)
+                -- chỉ quay về vị trí nghỉ 1 lần, sau đó cho tự do
+                if not returnedToRest then
+                    returnedToRest = true
+                    if hrp then
+                        hrp.Anchored = false
                         topos(RestPosition)
-                        platform.Transparency = 1
-                    else
-                        platform.Transparency = 1
-                        pcall(function() hrp.Anchored = false end)
+                    end
+                else
+                    if hrp then
+                        hrp.Anchored = false
                     end
                 end
             end
@@ -409,5 +432,7 @@ task.spawn(function()
     end
 end)
 
+
 print("Script loaded successfully!")
+
 

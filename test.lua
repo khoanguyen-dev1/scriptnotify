@@ -34,7 +34,6 @@ repeat
     end
 until LocalPlayer.Team and LocalPlayer.Team.Name == desiredTeam
 
-
 -- Try to load Fluent UI, fallback to simple UI
 local Window, Tabs = nil, {}
 local success, Fluent = pcall(function()
@@ -65,6 +64,7 @@ if success and Fluent then
         Window = nil
     end
 end
+
 -- Tạo nút nhỏ ON/OFF
 local ScreenGui = Instance.new("ScreenGui")
 local ImageButton = Instance.new("ImageButton")
@@ -138,7 +138,7 @@ if Tabs.Main then
                 [3] = {}
             }
             game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack(args))
- end
+        end
     })
 end
 
@@ -187,7 +187,6 @@ if Tabs.Token then
     end)
 end
 
-
 -- Teleport and Farm Functions
 local TweenService = game:GetService("TweenService")
 local function topos(Pos)
@@ -226,17 +225,15 @@ if Tabs.Farm then
     })
 end
 
-
-
-
 -- Farm Variables
 _G.FarmEnabled = false
 
 -- Add farm toggle
 if Tabs.Farm then
-   local Toggle = Tabs.Farm:AddToggle("MyToggle", {Title = "Auto Farm Oni Soldier", Default = false })
+    local Toggle = Tabs.Farm:AddToggle("MyToggle", {Title = "Auto Farm Oni Soldier", Default = false })
     Toggle:OnChanged(function(Value)
         _G.FarmEnabled = Value
+        print("Farm Status:", _G.FarmEnabled and "ON" or "OFF")
     end)
 end
 
@@ -311,6 +308,64 @@ local function GetAllMobs()
     return mobs
 end
 
+-- Bring Mob Function - CHỈ HOẠT ĐỘNG KHI _G.FarmEnabled = true
+local function BringMobs(mobs, platform)
+    -- KIỂM TRA ĐIỀU KIỆN: Chỉ bring khi farm được bật
+    if not _G.FarmEnabled then
+        return -- Không làm gì cả nếu farm tắt
+    end
+    
+    local player = game.Players.LocalPlayer
+    local char = player.Character
+    if not char then return end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    pcall(function()
+        for _, mob in pairs(mobs) do
+            local mh = mob:FindFirstChild("Humanoid")
+            local mhrp = mob:FindFirstChild("HumanoidRootPart")
+            if mh and mh.Health > 0 and mhrp then
+                local dist = (mhrp.Position - hrp.Position).Magnitude
+                if dist <= _G.BringRange then
+                    -- Chỉ bring khi farm đang bật
+                    mhrp.Size = Vector3.new(50, 50, 50)
+                    mhrp.CFrame = platform.CFrame * CFrame.new(0, -3, 0)
+                    mh:ChangeState(14)
+                    mhrp.CanCollide = false
+                    if mob:FindFirstChild("Head") then 
+                        mob.Head.CanCollide = false 
+                    end
+                    if mh:FindFirstChild("Animator") then 
+                        mh.Animator:Destroy() 
+                    end
+                    if sethiddenproperty then
+                        sethiddenproperty(player, "SimulationRadius", math.huge)
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- Reset Mob Properties Function
+local function ResetMobProperties()
+    pcall(function()
+        for _, mob in pairs(workspace.Enemies:GetChildren()) do
+            if mob:FindFirstChild("HumanoidRootPart") and string.find(mob.Name, npcName) then
+                local mhrp = mob:FindFirstChild("HumanoidRootPart")
+                -- Reset size và properties về bình thường
+                mhrp.Size = Vector3.new(4, 4, 4) -- kích thước gốc
+                mhrp.CanCollide = true
+                if mob:FindFirstChild("Head") then 
+                    mob.Head.CanCollide = true 
+                end
+            end
+        end
+    end)
+end
+
 -- Main Farm Loop
 local returnedToRest = false
 task.spawn(function()
@@ -325,8 +380,11 @@ task.spawn(function()
 
     while task.wait(0.2) do
         pcall(function()
+            -- KIỂM TRA FARM STATUS
             if not _G.FarmEnabled then
                 platform.Transparency = 1
+                -- Reset tất cả mob properties khi tắt farm
+                ResetMobProperties()
                 continue
             end
 
@@ -357,25 +415,8 @@ task.spawn(function()
                 hrp.Anchored = true
                 hrp.CFrame = platform.CFrame * CFrame.new(0, 3.5, 0)
 
-                -- Bring tất cả Oni Soldier về dưới platform (luôn luôn)
-                for _, mob in pairs(mobs) do
-                    local mh = mob:FindFirstChild("Humanoid")
-                    local mhrp = mob:FindFirstChild("HumanoidRootPart")
-                    if mh and mh.Health > 0 and mhrp then
-                        local dist = (mhrp.Position - hrp.Position).Magnitude
-                        if dist <= _G.BringRange then
-                            mhrp.Size = Vector3.new(50, 50, 50)
-                            mhrp.CFrame = platform.CFrame * CFrame.new(0, -3, 0)
-                            mh:ChangeState(14)
-                            mhrp.CanCollide = false
-                            if mob:FindFirstChild("Head") then mob.Head.CanCollide = false end
-                            if mh:FindFirstChild("Animator") then mh.Animator:Destroy() end
-                            if sethiddenproperty then
-                                sethiddenproperty(player, "SimulationRadius", math.huge)
-                            end
-                        end
-                    end
-                end
+                -- Bring tất cả Oni Soldier (chỉ khi _G.FarmEnabled = true)
+                BringMobs(mobs, platform)
 
                 -- Đợi mob chết hoặc timeout
                 local timeout = 0
@@ -390,6 +431,12 @@ task.spawn(function()
                         end
                     end
                     if not alive then break end
+                    
+                    -- Kiểm tra nếu farm bị tắt giữa chừng
+                    if not _G.FarmEnabled then
+                        ResetMobProperties()
+                        break
+                    end
                 until timeout > 30
 
                 -- Thả player ra sau khi xong
@@ -411,12 +458,4 @@ task.spawn(function()
 end)
 
 print("Script loaded successfully!")
-
-
-
-
-
-
-
-
-
+print("Bring Mob chỉ hoạt động khi _G.FarmEnabled = true")

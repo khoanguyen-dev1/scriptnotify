@@ -229,11 +229,20 @@ end
 _G.FarmEnabled = false
 
 -- Add farm toggle
-if Tabs.Farm then
+if Window and Tabs.Farm then
     local Toggle = Tabs.Farm:AddToggle("MyToggle", {Title = "Auto Farm Oni Soldier", Default = false })
     Toggle:OnChanged(function(Value)
         _G.FarmEnabled = Value
         print("Farm Status:", _G.FarmEnabled and "ON" or "OFF")
+    end)
+else
+    print("Farm toggle not available - using keyboard control")
+    -- Fallback: sử dụng phím để bật/tắt farm
+    game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == Enum.KeyCode.F then
+            _G.FarmEnabled = not _G.FarmEnabled
+            print("Farm Status (F key):", _G.FarmEnabled and "ON" or "OFF")
+        end
     end)
 end
 
